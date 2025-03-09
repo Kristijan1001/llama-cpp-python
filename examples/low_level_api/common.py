@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List
 
-# Based on https://github.com/ggerganov/llama.cpp/blob/master/examples/common.cpp
+# Based on https://github.com/ggml-org/llama.cpp/blob/master/examples/common.cpp
 
 
 @dataclass

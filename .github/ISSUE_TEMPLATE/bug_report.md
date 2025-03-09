@@ -66,8 +66,8 @@ Try the following:
 3. `rm -rf _skbuild/` # delete any old builds
 4. `python -m pip install .`
 5. `cd ./vendor/llama.cpp`
-6. Follow [llama.cpp's instructions](https://github.com/ggerganov/llama.cpp#build) to `cmake` llama.cpp
-7. Run llama.cpp's `./main` with the same arguments you previously passed to llama-cpp-python and see if you can reproduce the issue. If you can, [log an issue with llama.cpp](https://github.com/ggerganov/llama.cpp/issues)
+6. Follow [llama.cpp's instructions](https://github.com/ggml-org/llama.cpp#build) to `cmake` llama.cpp
+7. Run llama.cpp's `./main` with the same arguments you previously passed to llama-cpp-python and see if you can reproduce the issue. If you can, [log an issue with llama.cpp](https://github.com/ggml-org/llama.cpp/issues)
 
 # Failure Logs
 

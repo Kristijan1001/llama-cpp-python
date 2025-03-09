@@ -103,7 +103,10 @@ GGML_TYPE_I32 = 26
 GGML_TYPE_I64 = 27
 GGML_TYPE_F64 = 28
 GGML_TYPE_IQ1_M = 29
-GGML_TYPE_COUNT = 30
+GGML_TYPE_BF16 = 30
+GGML_TYPE_TQ1_0 = 34
+GGML_TYPE_TQ2_0 = 35
+GGML_TYPE_COUNT = 39
 
 # from ggml-backend.h
 # typedef bool (*ggml_backend_sched_eval_callback)(struct ggml_tensor * t, bool ask, void * user_data);
@@ -257,6 +260,7 @@ LLAMA_VOCAB_PRE_TYPE_EXAONE = 25
 LLAMA_VOCAB_PRE_TYPE_CHAMELEON = 26
 LLAMA_VOCAB_PRE_TYPE_MINERVA = 27
 LLAMA_VOCAB_PRE_TYPE_DEEPSEEK3_LLM = 28
+LLAMA_VOCAB_PRE_TYPE_GPT4O = 29
 
 
 # // note: these values should be synchronized with ggml_rope
@@ -708,7 +712,7 @@ class llama_model_params(ctypes.Structure):
 
 
 # // NOTE: changing the default values of parameters marked as [EXPERIMENTAL] may cause crashes or incorrect results in certain configurations
-# //       https://github.com/ggerganov/llama.cpp/pull/7544
+# //       https://github.com/ggml-org/llama.cpp/pull/7544
 # struct llama_context_params {
 #     uint32_t n_ctx;             // text context, 0 = from model
 #     uint32_t n_batch;           // logical maximum batch size that can be submitted to llama_decode
@@ -721,7 +725,7 @@ class llama_model_params(ctypes.Structure):
 #     enum llama_pooling_type      pooling_type;      // whether to pool (sum) embedding results by sequence id
 #     enum llama_attention_type    attention_type;    // attention type to use for embeddings
 
-#     // ref: https://github.com/ggerganov/llama.cpp/pull/2054
+#     // ref: https://github.com/ggml-org/llama.cpp/pull/2054
 #     float    rope_freq_base;   // RoPE base frequency, 0 = from model
 #     float    rope_freq_scale;  // RoPE frequency scaling factor, 0 = from model
 #     float    yarn_ext_factor;  // YaRN extrapolation mix factor, negative = from model
@@ -1276,7 +1280,10 @@ def llama_n_ubatch(ctx: llama_context_p, /) -> int:
 def llama_n_seq_max(ctx: llama_context_p, /) -> int:
     ...
 
-
+# LLAMA_API int32_t llama_model_n_head_kv(const struct llama_model * model);
+@ctypes_function("llama_model_n_head_kv", [llama_model_p_ctypes], ctypes.c_uint32)
+def llama_model_n_head_kv(model: llama_model_p, /) -> int:
+    ...
 
 
 # DEPRECATED(LLAMA_API int32_t llama_n_ctx_train(const struct llama_model * model), "use llama_model_n_ctx_train instead");
@@ -1355,6 +1362,11 @@ def llama_model_n_layer(model: llama_model_p, /) -> int:
 @ctypes_function("llama_model_n_head", [llama_model_p_ctypes], ctypes.c_int32)
 def llama_model_n_head(model: llama_model_p, /) -> int:
     ...
+
+
+# LLAMA_API int32_t llama_model_n_head_kv  (const struct llama_model * model);
+@ctypes_function("llama_model_n_head_kv", [llama_model_p_ctypes], ctypes.c_int32)
+def llama_model_n_head_kv(model: llama_model_p, /) -> int:
 
 
 # // Get the model's RoPE frequency scaling factor
@@ -3235,7 +3247,7 @@ def llama_detokenize(
 
 # /// Apply chat template. Inspired by hf apply_chat_template() on python.
 # /// Both "model" and "custom_template" are optional, but at least one is required. "custom_template" has higher precedence than "model"
-# /// NOTE: This function does not use a jinja parser. It only support a pre-defined list of template. See more: https://github.com/ggerganov/llama.cpp/wiki/Templates-supported-by-llama_chat_apply_template
+# /// NOTE: This function does not use a jinja parser. It only support a pre-defined list of template. See more: https://github.com/ggml-org/llama.cpp/wiki/Templates-supported-by-llama_chat_apply_template
 # /// @param tmpl A Jinja template to use for this chat. If this is nullptr, the model’s default chat template will be used instead.
 # /// @param chat Pointer to a list of multiple llama_chat_message
 # /// @param n_msg Number of llama_chat_message in this chat
@@ -3375,8 +3387,8 @@ class llama_sampler_i(ctypes.Structure):
 
 
 # struct llama_sampler {
-#     struct llama_sampler_i  * iface;
-#     llama_sampler_context_t   ctx;
+#     const struct llama_sampler_i * iface;
+#     llama_sampler_context_t        ctx;
 # };
 class llama_sampler(ctypes.Structure):
     _fields_ = [
@@ -3410,6 +3422,16 @@ llama_sampler_i._fields_ = [
 
 
 # // mirror of llama_sampler_i:
+
+# LLAMA_API struct llama_sampler * llama_sampler_init  (const struct llama_sampler_i * iface, llama_sampler_context_t ctx);
+@ctypes_function(
+    "llama_sampler_init",
+    [ctypes.POINTER(llama_sampler_i), llama_sampler_context_t],
+    llama_sampler_p_ctypes,
+)
+def llama_sampler_init(smpl: llama_sampler_p, /) -> llama_sampler_p:
+    ...
+
 # LLAMA_API const char *           llama_sampler_name  (const struct llama_sampler * smpl);
 @ctypes_function(
     "llama_sampler_name",
@@ -3549,7 +3571,7 @@ def llama_sampler_init_dist(seed: int) -> llama_sampler_p:
 # /// @details Sorts candidate tokens by their logits in descending order and calculate probabilities based on logits.
 # /// NOTE: Avoid using on the full vocabulary as the sorting can become slow. For example, apply top-k or top-p sampling first.
 # DEPRECATED(LLAMA_API struct llama_sampler * llama_sampler_init_softmax    (void),
-#     "will be removed in the future (see https://github.com/ggerganov/llama.cpp/pull/9896#discussion_r1800920915)");
+#     "will be removed in the future (see https://github.com/ggml-org/llama.cpp/pull/9896#discussion_r1800920915)");
 @ctypes_function("llama_sampler_init_softmax", [], llama_sampler_p_ctypes)
 def llama_sampler_init_softmax() -> llama_sampler_p:
     ...
@@ -3573,7 +3595,7 @@ def llama_sampler_init_top_p(p: float, min_keep: int) -> llama_sampler_p:
     ...
 
 
-# /// @details Minimum P sampling as described in https://github.com/ggerganov/llama.cpp/pull/3841
+# /// @details Minimum P sampling as described in https://github.com/ggml-org/llama.cpp/pull/3841
 # LLAMA_API struct llama_sampler * llama_sampler_init_min_p      (float   p, size_t min_keep);
 @ctypes_function(
     "llama_sampler_init_min_p",
@@ -3624,6 +3646,13 @@ def llama_sampler_init_temp_ext(
 def llama_sampler_init_xtc(
     p: float, t: float, min_keep: int, seed: int, /
 ) -> llama_sampler_p:
+    ...
+
+
+# /// @details Top n sigma sampling as described in academic paper "Top-nσ: Not All Logits Are You Need" https://arxiv.org/pdf/2411.07641
+# LLAMA_API struct llama_sampler * llama_sampler_init_top_n_sigma(float   n);
+@ctypes_function("llama_sampler_init_top_n_sigma",[ctypes.c_float], llama_sampler_p_ctypes)
+def llama_sampler_init_top_n_sigma(n: float) -> llama_sampler_p:
     ...
 
 
@@ -3681,6 +3710,76 @@ def llama_sampler_init_mirostat_v2(
 )
 def llama_sampler_init_grammar(
     vocab: llama_vocab_p, grammar_str: bytes, grammar_root: bytes, /
+) -> llama_sampler_p:
+    ...
+
+# DEPRECATED(LLAMA_API struct llama_sampler * llama_sampler_init_grammar_lazy(
+#             const struct llama_vocab * vocab,
+#                         const char * grammar_str,
+#                         const char * grammar_root,
+#                         const char ** trigger_words,
+#                                 size_t num_trigger_words,
+#                 const llama_token * trigger_tokens,
+#                                 size_t num_trigger_tokens),
+#         "use llama_sampler_init_grammar_lazy_patterns instead");
+@ctypes_function(
+    "llama_sampler_init_grammar_lazy",
+    [
+        llama_vocab_p_ctypes,
+        ctypes.c_char_p,
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_char_p),
+        ctypes.c_size_t,
+        llama_token_p,
+        ctypes.c_size_t
+    ],
+    llama_sampler_p_ctypes,
+)
+def llama_sampler_init_grammar_lazy(
+    vocab: llama_vocab_p,
+    grammar_str: bytes,
+    grammar_root: bytes,
+    trigger_words: CtypesArray[bytes],
+    num_trigger_words: int,
+    trigger_tokens:CtypesArray[llama_token],
+    num_trigger_tokens: int,
+    /
+) -> llama_sampler_p:
+    ...
+
+# /// @details Lazy grammar sampler, introduced in https://github.com/ggml-org/llama.cpp/pull/9639
+# /// @param trigger_patterns A list of patterns that will trigger the grammar sampler. Pattern will be matched from the start of the generation output, and grammar sampler will be fed content starting from its first match group.
+# /// @param trigger_tokens A list of tokens that will trigger the grammar sampler. Grammar sampler will be fed content starting from the trigger token included.
+# LLAMA_API struct llama_sampler * llama_sampler_init_grammar_lazy_patterns(
+#     const struct llama_vocab * vocab,
+#                     const char * grammar_str,
+#                     const char * grammar_root,
+#                     const char ** trigger_patterns,
+#                         size_t num_trigger_patterns,
+#             const llama_token * trigger_tokens,
+#                         size_t num_trigger_tokens);
+@ctypes_function(
+    "llama_sampler_init_grammar_lazy_patterns",
+    [
+        llama_vocab_p_ctypes,
+        ctypes.c_char_p,
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_char_p),
+        ctypes.c_size_t,
+        llama_token_p,
+        ctypes.c_size_t
+    ],
+    llama_sampler_p_ctypes,
+)
+def llama_sampler_init_grammar_lazy_patterns(
+    vocab: llama_vocab_p,
+    grammar_str: bytes,
+    grammar_root: bytes,
+    trigger_patterns: CtypesArray[bytes],
+    num_trigger_patterns: int,
+    trigger_tokens:CtypesArray[llama_token],
+    num_trigger_tokens: int,
+    /
 ) -> llama_sampler_p:
     ...
 

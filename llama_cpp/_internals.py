@@ -89,6 +89,12 @@ class LlamaModel:
     def n_embd(self) -> int:
         return llama_cpp.llama_n_embd(self.model)
 
+    def n_head_kv(self) -> int:
+        return llama_cpp.llama_model_n_head_kv(self.model)
+
+    def n_params(self) -> int:
+        return llama_cpp.llama_model_n_params(self.model)
+
     def rope_freq_scale_train(self) -> float:
         return llama_cpp.llama_model_rope_freq_scale_train(self.model)
 
@@ -99,9 +105,6 @@ class LlamaModel:
 
     def size(self) -> int:
         return llama_cpp.llama_model_size(self.model)
-
-    def n_params(self) -> int:
-        return llama_cpp.llama_model_n_params(self.model)
 
     def get_tensor(self, name: str) -> ctypes.c_void_p:
         raise NotImplementedError("get_tensor is not implemented in llama.cpp")
@@ -747,9 +750,7 @@ class CustomSampler:
         sampler_i.clone = llama_cpp.llama_sampler_i_clone(0)
         sampler_i.free = llama_cpp.llama_sampler_i_free(0)
 
-        self.sampler = llama_cpp.llama_sampler()
-        self.sampler.iface = ctypes.pointer(sampler_i)
-        self.sampler.ctx = None
+        self.sampler = llama_cpp.llama_sampler_init(ctypes.pointer(sampler_i), None)
 
     def get_sampler(self) -> llama_cpp.llama_sampler_p:
         return ctypes.pointer(self.sampler)

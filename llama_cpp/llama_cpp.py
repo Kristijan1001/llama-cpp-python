@@ -3413,7 +3413,7 @@ llama_sampler_i._fields_ = [
     ("clone", llama_sampler_i_clone),
     ("free", llama_sampler_i_free),
 ]
-llama_sampler_i_p = CtypesPointer[llama_sampler_i]
+llama_sampler_i_p = ctypes.POINTER(llama_sampler_i)
 
 # // mirror of llama_sampler_i:
 

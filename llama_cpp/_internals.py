@@ -791,12 +791,20 @@ class LlamaSampler:
         sampler = llama_cpp.llama_sampler_init_typical(p, min_keep)
         self._add_sampler(sampler)
 
+    def add_xtc(self, p: float, t: float, min_keep: int, seed: int):
+        sampler = llama_cpp.llama_sampler_init_xtc(p, t, min_keep, seed)
+        self._add_sampler(sampler)
+
     def add_temp(self, temp: float):
         sampler = llama_cpp.llama_sampler_init_temp(temp)
         self._add_sampler(sampler)
 
     def add_temp_ext(self, t: float, delta: float, exponent: float):
         sampler = llama_cpp.llama_sampler_init_temp_ext(t, delta, exponent)
+        self._add_sampler(sampler)
+
+    def add_top_n_sigma(self, n: float):
+        sampler = llama_cpp.llama_sampler_init_top_n_sigma(n)
         self._add_sampler(sampler)
 
     def add_mirostat(self, n_vocab: int, seed: int, tau: float, eta: float, m: int):

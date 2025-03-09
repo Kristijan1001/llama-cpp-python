@@ -1367,7 +1367,7 @@ def llama_model_n_head(model: llama_model_p, /) -> int:
 # LLAMA_API int32_t llama_model_n_head_kv  (const struct llama_model * model);
 @ctypes_function("llama_model_n_head_kv", [llama_model_p_ctypes], ctypes.c_int32)
 def llama_model_n_head_kv(model: llama_model_p, /) -> int:
-
+    ...
 
 # // Get the model's RoPE frequency scaling factor
 # LLAMA_API float llama_model_rope_freq_scale_train(const struct llama_model * model);

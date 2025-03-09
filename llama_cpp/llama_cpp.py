@@ -1280,12 +1280,6 @@ def llama_n_ubatch(ctx: llama_context_p, /) -> int:
 def llama_n_seq_max(ctx: llama_context_p, /) -> int:
     ...
 
-# LLAMA_API int32_t llama_model_n_head_kv(const struct llama_model * model);
-@ctypes_function("llama_model_n_head_kv", [llama_model_p_ctypes], ctypes.c_uint32)
-def llama_model_n_head_kv(model: llama_model_p, /) -> int:
-    ...
-
-
 # DEPRECATED(LLAMA_API int32_t llama_n_ctx_train(const struct llama_model * model), "use llama_model_n_ctx_train instead");
 @ctypes_function("llama_n_ctx_train", [llama_model_p_ctypes], ctypes.c_int32)
 def llama_n_ctx_train(model: llama_model_p, /) -> int:

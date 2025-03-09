@@ -813,6 +813,47 @@ class LlamaSampler:
         )
         self._add_sampler(sampler)
 
+    def add_grammar_lazy(
+            self,
+            model: LlamaModel,
+            grammar: LlamaGrammar,
+            trigger_words: list[bytes],
+            num_trigger_words: int,
+            trigger_tokens:list[llama_cpp.llama_token],
+            num_trigger_tokens: int
+        ):
+        sampler = llama_cpp.llama_sampler_init_grammar_lazy(
+            model.vocab,
+            grammar._grammar.encode("utf-8"),
+            grammar._root.encode("utf-8"),
+            trigger_words,
+            num_trigger_words,
+            trigger_tokens,
+            num_trigger_tokens
+        )
+        self._add_sampler(sampler)
+
+    def add_grammar_lazy_patterns(
+            self,
+            model: LlamaModel,
+            grammar: LlamaGrammar,
+            trigger_patterns: list[bytes],
+            num_trigger_patterns: int,
+            trigger_tokens:list[llama_cpp.llama_token],
+            num_trigger_tokens: int
+        ):
+        sampler = llama_cpp.llama_sampler_init_grammar_lazy_patterns(
+            model.vocab,
+            grammar._grammar.encode("utf-8"),
+            grammar._root.encode("utf-8"),
+            trigger_patterns,
+            num_trigger_patterns,
+            trigger_tokens,
+            num_trigger_tokens
+        )
+        self._add_sampler(sampler)
+
+
     def add_penalties(
         self,
         n_vocab: int,

@@ -680,6 +680,8 @@ class Llama:
         mirostat_mode: int = 0,
         mirostat_eta: float = 0.1,
         mirostat_tau: float = 5.0,
+        xtc_threshold: float = 0.1,
+        xtc_probability: float = 0.0,
         penalize_nl: bool = True,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
@@ -753,6 +755,7 @@ class Llama:
                 sampler.add_min_p(min_p, min_keep)
                 sampler.add_temp(temp)
                 sampler.add_dist(self._seed)
+                sampler.add_xtc(xtc_probability, xtc_threshold, min_keep, self._seed)
         return sampler
 
     def sample(
@@ -769,6 +772,8 @@ class Llama:
         mirostat_mode: int = 0,
         mirostat_eta: float = 0.1,
         mirostat_tau: float = 5.0,
+        xtc_threshold: float = 0.1,
+        xtc_probability: float = 0.0,
         penalize_nl: bool = True,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
@@ -804,6 +809,8 @@ class Llama:
                 mirostat_mode=mirostat_mode,
                 mirostat_tau=mirostat_tau,
                 mirostat_eta=mirostat_eta,
+                xtc_threshold = xtc_threshold,
+                xtc_probability = xtc_probability,
                 penalize_nl=penalize_nl,
                 logits_processor=logits_processor,
                 grammar=grammar,
@@ -833,6 +840,8 @@ class Llama:
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
+        xtc_threshold: float = 0.1,
+        xtc_probability: float = 0.0,
         penalize_nl: bool = True,
         logits_processor: Optional[LogitsProcessorList] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
@@ -872,6 +881,8 @@ class Llama:
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
+            xtc_threshold = xtc_threshold,
+            xtc_probability = xtc_probability,
             penalize_nl=penalize_nl,
             logits_processor=logits_processor,
             grammar=grammar,
@@ -924,6 +935,8 @@ class Llama:
                     mirostat_mode=mirostat_mode,
                     mirostat_tau=mirostat_tau,
                     mirostat_eta=mirostat_eta,
+                    xtc_threshold = xtc_threshold,
+                    xtc_probability = xtc_probability,
                     logits_processor=logits_processor,
                     grammar=grammar,
                     penalize_nl=penalize_nl,
@@ -1140,6 +1153,8 @@ class Llama:
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
+        xtc_threshold: float = 0.1,
+        xtc_probability: float = 0.0,
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
@@ -1328,6 +1343,8 @@ class Llama:
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
+            xtc_threshold=xtc_threshold,
+            xtc_probability=xtc_probability,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
             repeat_penalty=repeat_penalty,
@@ -1760,6 +1777,8 @@ class Llama:
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
+        xtc_threshold: float = 0.1,
+        xtc_probability: float = 0.0,
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
@@ -1789,6 +1808,8 @@ class Llama:
             mirostat_mode: The mirostat sampling mode.
             mirostat_tau: The target cross-entropy (or surprise) value you want to achieve for the generated text. A higher value corresponds to more surprising or less predictable text, while a lower value corresponds to less surprising or more predictable text.
             mirostat_eta: The learning rate used to update `mu` based on the error between the target and observed surprisal of the sampled word. A larger learning rate will cause `mu` to be updated more quickly, while a smaller learning rate will result in slower updates.
+            xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0).
+            xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1).
             model: The name to use for the model in the completion object.
             stopping_criteria: A list of stopping criteria to use.
             logits_processor: A list of logits processors to use.
@@ -1823,6 +1844,8 @@ class Llama:
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
+            xtc_threshold=xtc_threshold,
+            xtc_probability=xtc_probability,
             model=model,
             stopping_criteria=stopping_criteria,
             logits_processor=logits_processor,
@@ -1857,6 +1880,8 @@ class Llama:
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
+        xtc_threshold: float = 0.1,
+        xtc_probability: float = 0.0,
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
@@ -1886,6 +1911,8 @@ class Llama:
             mirostat_mode: The mirostat sampling mode.
             mirostat_tau: The target cross-entropy (or surprise) value you want to achieve for the generated text. A higher value corresponds to more surprising or less predictable text, while a lower value corresponds to less surprising or more predictable text.
             mirostat_eta: The learning rate used to update `mu` based on the error between the target and observed surprisal of the sampled word. A larger learning rate will cause `mu` to be updated more quickly, while a smaller learning rate will result in slower updates.
+            xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
+            xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
             model: The name to use for the model in the completion object.
             stopping_criteria: A list of stopping criteria to use.
             logits_processor: A list of logits processors to use.
@@ -1920,6 +1947,8 @@ class Llama:
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
+            xtc_threshold=xtc_threshold,
+            xtc_probability=xtc_probability,
             model=model,
             stopping_criteria=stopping_criteria,
             logits_processor=logits_processor,
@@ -1951,6 +1980,8 @@ class Llama:
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
+        xtc_threshold: float = 0.1,
+        xtc_probability: float = 0.0,
         model: Optional[str] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
@@ -1985,6 +2016,8 @@ class Llama:
             mirostat_mode: The mirostat sampling mode.
             mirostat_tau: The mirostat sampling tau parameter.
             mirostat_eta: The mirostat sampling eta parameter.
+            xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
+            xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1).XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
             model: The name to use for the model in the completion object.
             logits_processor: A list of logits processors to use.
             grammar: A grammar to use.
@@ -2024,6 +2057,8 @@ class Llama:
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
+            xtc_threshold=xtc_threshold,
+            xtc_probability=xtc_probability,
             model=model,
             logits_processor=logits_processor,
             grammar=grammar,

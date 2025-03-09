@@ -570,9 +570,9 @@ class LlamaSamplingParams:
     n_prev: int = 64
     n_probs: int = 0
     top_k: int = 40
+    top_n_sigma: float = -1.00
     top_p: float = 0.95
     min_p: float = 0.05
-    tfs_z: float = 1.00
     typical_p: float = 1.00
     temp: float = 0.80
     penalty_last_n: int = 64

@@ -677,7 +677,6 @@ class Llama:
         repeat_penalty: float = 1.0,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
-        tfs_z: float = 1.0,
         mirostat_mode: int = 0,
         mirostat_eta: float = 0.1,
         mirostat_tau: float = 5.0,
@@ -771,7 +770,6 @@ class Llama:
         repeat_penalty: float = 1.0,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
-        tfs_z: float = 1.0,
         mirostat_mode: int = 0,
         mirostat_eta: float = 0.1,
         mirostat_tau: float = 5.0,
@@ -809,7 +807,6 @@ class Llama:
                 repeat_penalty=repeat_penalty,
                 frequency_penalty=frequency_penalty,
                 presence_penalty=presence_penalty,
-                tfs_z=tfs_z,
                 mirostat_mode=mirostat_mode,
                 mirostat_tau=mirostat_tau,
                 mirostat_eta=mirostat_eta,
@@ -841,7 +838,6 @@ class Llama:
         reset: bool = True,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
-        tfs_z: float = 1.0,
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
@@ -883,7 +879,6 @@ class Llama:
             repeat_penalty=repeat_penalty,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
-            tfs_z=tfs_z,
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
@@ -938,7 +933,6 @@ class Llama:
                     repeat_penalty=repeat_penalty,
                     frequency_penalty=frequency_penalty,
                     presence_penalty=presence_penalty,
-                    tfs_z=tfs_z,
                     mirostat_mode=mirostat_mode,
                     mirostat_tau=mirostat_tau,
                     mirostat_eta=mirostat_eta,
@@ -1157,7 +1151,6 @@ class Llama:
         top_n_sigma: float = -1.00,
         stream: bool = False,
         seed: Optional[int] = None,
-        tfs_z: float = 1.0,
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
@@ -1348,7 +1341,6 @@ class Llama:
             min_p=min_p,
             typical_p=typical_p,
             temp=temperature,
-            tfs_z=tfs_z,
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
@@ -1783,7 +1775,6 @@ class Llama:
         top_n_sigma: float = -1.00,
         stream: bool = False,
         seed: Optional[int] = None,
-        tfs_z: float = 1.0,
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
@@ -1815,7 +1806,6 @@ class Llama:
             top_n_sigma: Limit the next token selection to a subset of tokens with pre-softmax logits that are within n * σ less than the max logit (default: -1.00, -1.00 = disabled).
             stream: Whether to stream the results.
             seed: The seed to use for sampling.
-            tfs_z: The tail-free sampling parameter. Tail Free Sampling described in https://www.trentonbricken.com/Tail-Free-Sampling/.
             mirostat_mode: The mirostat sampling mode.
             mirostat_tau: The target cross-entropy (or surprise) value you want to achieve for the generated text. A higher value corresponds to more surprising or less predictable text, while a lower value corresponds to less surprising or more predictable text.
             mirostat_eta: The learning rate used to update `mu` based on the error between the target and observed surprisal of the sampled word. A larger learning rate will cause `mu` to be updated more quickly, while a smaller learning rate will result in slower updates.
@@ -1852,7 +1842,6 @@ class Llama:
             top_n_sigma=top_n_sigma,
             stream=stream,
             seed=seed,
-            tfs_z=tfs_z,
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
@@ -1889,7 +1878,6 @@ class Llama:
         top_n_sigma: float = -1.00,
         stream: bool = False,
         seed: Optional[int] = None,
-        tfs_z: float = 1.0,
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
@@ -1921,7 +1909,6 @@ class Llama:
             top_n_sigma: Limit the next token selection to a subset of tokens with pre-softmax logits that are within n * σ less than the max logit (default: -1.00, -1.00 = disabled).
             stream: Whether to stream the results.
             seed: The seed to use for sampling.
-            tfs_z: The tail-free sampling parameter. Tail Free Sampling described in https://www.trentonbricken.com/Tail-Free-Sampling/.
             mirostat_mode: The mirostat sampling mode.
             mirostat_tau: The target cross-entropy (or surprise) value you want to achieve for the generated text. A higher value corresponds to more surprising or less predictable text, while a lower value corresponds to less surprising or more predictable text.
             mirostat_eta: The learning rate used to update `mu` based on the error between the target and observed surprisal of the sampled word. A larger learning rate will cause `mu` to be updated more quickly, while a smaller learning rate will result in slower updates.
@@ -1958,7 +1945,6 @@ class Llama:
             top_n_sigma=top_n_sigma,
             stream=stream,
             seed=seed,
-            tfs_z=tfs_z,
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
@@ -1992,7 +1978,6 @@ class Llama:
         presence_penalty: float = 0.0,
         frequency_penalty: float = 0.0,
         repeat_penalty: float = 1.0,
-        tfs_z: float = 1.0,
         mirostat_mode: int = 0,
         mirostat_tau: float = 5.0,
         mirostat_eta: float = 0.1,
@@ -2029,7 +2014,6 @@ class Llama:
             presence_penalty: The penalty to apply to tokens based on their presence in the prompt.
             frequency_penalty: The penalty to apply to tokens based on their frequency in the prompt.
             repeat_penalty: The penalty to apply to repeated tokens.
-            tfs_z: The tail-free sampling parameter.
             mirostat_mode: The mirostat sampling mode.
             mirostat_tau: The mirostat sampling tau parameter.
             mirostat_eta: The mirostat sampling eta parameter.
@@ -2071,7 +2055,6 @@ class Llama:
             presence_penalty=presence_penalty,
             frequency_penalty=frequency_penalty,
             repeat_penalty=repeat_penalty,
-            tfs_z=tfs_z,
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,

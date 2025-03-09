@@ -930,7 +930,7 @@ class Llama:
             while sample_idx < self.n_tokens:
                 token = self.sample(
                     top_k=top_k,
-                    top_n_sigma=top_n_sigma
+                    top_n_sigma=top_n_sigma,
                     top_p=top_p,
                     min_p=min_p,
                     typical_p=typical_p,

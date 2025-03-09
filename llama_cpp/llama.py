@@ -669,6 +669,7 @@ class Llama:
     def _init_sampler(
         self,
         top_k: int = 40,
+        top_n_sigma: float = -1.00,
         top_p: float = 0.95,
         min_p: float = 0.05,
         typical_p: float = 1.0,
@@ -751,6 +752,7 @@ class Llama:
                 min_keep = max(1, n_probs)
                 sampler.add_top_k(top_k)
                 sampler.add_typical(typical_p, min_keep)
+                sampler.add_top_n_sigma(top_n_sigma)
                 sampler.add_top_p(top_p, min_keep)
                 sampler.add_min_p(min_p, min_keep)
                 sampler.add_temp(temp)
@@ -761,6 +763,7 @@ class Llama:
     def sample(
         self,
         top_k: int = 40,
+        top_n_sigma: float = -1.00,
         top_p: float = 0.95,
         min_p: float = 0.05,
         typical_p: float = 1.0,
@@ -798,6 +801,7 @@ class Llama:
             tmp_sampler = True
             self._sampler = self._init_sampler(
                 top_k=top_k,
+                top_n_sigma=top_n_sigma,
                 top_p=top_p,
                 min_p=min_p,
                 typical_p=typical_p,
@@ -828,6 +832,7 @@ class Llama:
         self,
         tokens: Sequence[int],
         top_k: int = 40,
+        top_n_sigma: float = -1.00,
         top_p: float = 0.95,
         min_p: float = 0.05,
         typical_p: float = 1.0,
@@ -870,6 +875,7 @@ class Llama:
         self._mirostat_mu = ctypes.c_float(2.0 * mirostat_tau)
         self._sampler = self._init_sampler(
             top_k=top_k,
+            top_n_sigma=top_n_sigma,
             top_p=top_p,
             min_p=min_p,
             typical_p=typical_p,
@@ -924,6 +930,7 @@ class Llama:
             while sample_idx < self.n_tokens:
                 token = self.sample(
                     top_k=top_k,
+                    top_n_sigma=top_n_sigma
                     top_p=top_p,
                     min_p=min_p,
                     typical_p=typical_p,
@@ -1147,6 +1154,7 @@ class Llama:
         presence_penalty: float = 0.0,
         repeat_penalty: float = 1.0,
         top_k: int = 40,
+        top_n_sigma: float = -1.00,
         stream: bool = False,
         seed: Optional[int] = None,
         tfs_z: float = 1.0,
@@ -1335,6 +1343,7 @@ class Llama:
         for token in self.generate(
             prompt_tokens,
             top_k=top_k,
+            top_n_sigma=top_n_sigma,
             top_p=top_p,
             min_p=min_p,
             typical_p=typical_p,
@@ -1771,6 +1780,7 @@ class Llama:
         presence_penalty: float = 0.0,
         repeat_penalty: float = 1.0,
         top_k: int = 40,
+        top_n_sigma: float = -1.00,
         stream: bool = False,
         seed: Optional[int] = None,
         tfs_z: float = 1.0,
@@ -1802,14 +1812,15 @@ class Llama:
             presence_penalty: The penalty to apply to tokens based on their presence in the prompt.
             repeat_penalty: The penalty to apply to repeated tokens.
             top_k: The top-k value to use for sampling. Top-K sampling described in academic paper "The Curious Case of Neural Text Degeneration" https://arxiv.org/abs/1904.09751
+            top_n_sigma: Limit the next token selection to a subset of tokens with pre-softmax logits that are within n * σ less than the max logit (default: -1.00, -1.00 = disabled).
             stream: Whether to stream the results.
             seed: The seed to use for sampling.
             tfs_z: The tail-free sampling parameter. Tail Free Sampling described in https://www.trentonbricken.com/Tail-Free-Sampling/.
             mirostat_mode: The mirostat sampling mode.
             mirostat_tau: The target cross-entropy (or surprise) value you want to achieve for the generated text. A higher value corresponds to more surprising or less predictable text, while a lower value corresponds to less surprising or more predictable text.
             mirostat_eta: The learning rate used to update `mu` based on the error between the target and observed surprisal of the sampled word. A larger learning rate will cause `mu` to be updated more quickly, while a smaller learning rate will result in slower updates.
-            xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0).
-            xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1).
+            xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
+            xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
             model: The name to use for the model in the completion object.
             stopping_criteria: A list of stopping criteria to use.
             logits_processor: A list of logits processors to use.
@@ -1838,6 +1849,7 @@ class Llama:
             presence_penalty=presence_penalty,
             repeat_penalty=repeat_penalty,
             top_k=top_k,
+            top_n_sigma=top_n_sigma,
             stream=stream,
             seed=seed,
             tfs_z=tfs_z,
@@ -1874,6 +1886,7 @@ class Llama:
         presence_penalty: float = 0.0,
         repeat_penalty: float = 1.0,
         top_k: int = 40,
+        top_n_sigma: float = -1.00,
         stream: bool = False,
         seed: Optional[int] = None,
         tfs_z: float = 1.0,
@@ -1905,6 +1918,7 @@ class Llama:
             presence_penalty: The penalty to apply to tokens based on their presence in the prompt.
             repeat_penalty: The penalty to apply to repeated tokens.
             top_k: The top-k value to use for sampling. Top-K sampling described in academic paper "The Curious Case of Neural Text Degeneration" https://arxiv.org/abs/1904.09751
+            top_n_sigma: Limit the next token selection to a subset of tokens with pre-softmax logits that are within n * σ less than the max logit (default: -1.00, -1.00 = disabled).
             stream: Whether to stream the results.
             seed: The seed to use for sampling.
             tfs_z: The tail-free sampling parameter. Tail Free Sampling described in https://www.trentonbricken.com/Tail-Free-Sampling/.
@@ -1941,6 +1955,7 @@ class Llama:
             presence_penalty=presence_penalty,
             repeat_penalty=repeat_penalty,
             top_k=top_k,
+            top_n_sigma=top_n_sigma,
             stream=stream,
             seed=seed,
             tfs_z=tfs_z,
@@ -1966,6 +1981,7 @@ class Llama:
         temperature: float = 0.2,
         top_p: float = 0.95,
         top_k: int = 40,
+        top_n_sigma: float = -1.00,
         min_p: float = 0.05,
         typical_p: float = 1.0,
         stream: bool = False,
@@ -2002,6 +2018,7 @@ class Llama:
             temperature: The temperature to use for sampling.
             top_p: The top-p value to use for nucleus sampling. Nucleus sampling described in academic paper "The Curious Case of Neural Text Degeneration" https://arxiv.org/abs/1904.09751
             top_k: The top-k value to use for sampling. Top-K sampling described in academic paper "The Curious Case of Neural Text Degeneration" https://arxiv.org/abs/1904.09751
+            top_n_sigma: Limit the next token selection to a subset of tokens with pre-softmax logits that are within n * σ less than the max logit (default: -1.00, -1.00 = disabled).
             min_p: The min-p value to use for minimum p sampling. Minimum P sampling as described in https://github.com/ggml-org/llama.cpp/pull/3841
             typical_p: The typical-p value to use for sampling. Locally Typical Sampling implementation described in the paper https://arxiv.org/abs/2202.00666.
             stream: Whether to stream the results.
@@ -2041,6 +2058,7 @@ class Llama:
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
+            top_n_sigma=top_n_sigma,
             min_p=min_p,
             typical_p=typical_p,
             logprobs=logprobs,
@@ -2207,6 +2225,10 @@ class Llama:
     def n_embd(self) -> int:
         """Return the embedding size."""
         return self._model.n_embd()
+
+    def n_head_kv(self) -> int:
+        """Return the head_kv size."""
+        return self._model.n_head_kv()
 
     def n_vocab(self) -> int:
         """Return the vocabulary size."""

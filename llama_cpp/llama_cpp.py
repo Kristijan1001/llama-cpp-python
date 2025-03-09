@@ -3419,7 +3419,7 @@ llama_sampler_i._fields_ = [
     ("clone", llama_sampler_i_clone),
     ("free", llama_sampler_i_free),
 ]
-
+llama_sampler_i_p = CtypesPointer[llama_sampler_i]
 
 # // mirror of llama_sampler_i:
 
@@ -3429,7 +3429,10 @@ llama_sampler_i._fields_ = [
     [ctypes.POINTER(llama_sampler_i), llama_sampler_context_t],
     llama_sampler_p_ctypes,
 )
-def llama_sampler_init(smpl: llama_sampler_p, /) -> llama_sampler_p:
+def llama_sampler_init(
+    iface:llama_sampler_i_p,
+    ctx :llama_sampler_context_t
+    ) -> llama_sampler_p:
     ...
 
 # LLAMA_API const char *           llama_sampler_name  (const struct llama_sampler * smpl);

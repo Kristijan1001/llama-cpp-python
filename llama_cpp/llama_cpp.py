@@ -1148,7 +1148,7 @@ def llama_model_load_from_file(
     llama_model_p_ctypes,
 )
 def llama_model_load_from_splits(
-    paths: List[bytes], n_paths: int, params: llama_model_params, /
+    paths: list[bytes], n_paths: int, params: llama_model_params, /
 ) -> Optional[llama_model_p]:
     """Load the model from multiple splits (support custom naming scheme)
 
@@ -3725,7 +3725,7 @@ def llama_sampler_init_grammar(
         llama_vocab_p_ctypes,
         ctypes.c_char_p,
         ctypes.c_char_p,
-        ctypes.POINTER(ctypes.c_char_p),
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_size_t,
         llama_token_p,
         ctypes.c_size_t
@@ -3761,7 +3761,7 @@ def llama_sampler_init_grammar_lazy(
         llama_vocab_p_ctypes,
         ctypes.c_char_p,
         ctypes.c_char_p,
-        ctypes.POINTER(ctypes.c_char_p),
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_size_t,
         llama_token_p,
         ctypes.c_size_t
@@ -3821,7 +3821,7 @@ def llama_sampler_init_penalties(
         ctypes.c_float,
         ctypes.c_int32,
         ctypes.c_int32,
-        ctypes.POINTER(ctypes.c_char_p),
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_size_t,
     ],
     llama_sampler_p_ctypes,

@@ -824,13 +824,17 @@ class LlamaSampler:
         )
         self._add_sampler(sampler)
 
-    def convert_list_str_to_char_ptr_array(str_list: List[str]) -> ctypes.POINTER(ctypes.POINTER(ctypes.c_char)):
+    def convert_list_str_to_char_array_ptr(self, str_list: List[str]):
         """
-        Converts a list of strings to a char** array for C interop.
+        Converts a list of strings to a char** array for C interop, and returns two values:
+        the char** array and the number of bytes in the list.
+
         Args:
-            list[str]: List of string objects.
+            str_list: List of string objects.
+
         Returns:
-            A ctypes pointer to a char** array.
+            - A ctypes pointer to a char** array.
+            - The number of strings in the input list.
         """
         # Encode strings to bytes
         byte_list = [s.encode('utf-8') for s in str_list]
@@ -851,8 +855,10 @@ class LlamaSampler:
             # Cast the buffer to a char pointer and assign it to the array
             char_ptr_array[i] = ctypes.cast(c_char_array, char_ptr_type)
 
-        # Cast the array to a char** pointer and return it
-        return ctypes.cast(char_ptr_array, ctypes.POINTER(char_ptr_type)), num_byte_list
+        char_array_ptr = ctypes.cast(char_ptr_array, ctypes.POINTER(char_ptr_type))
+
+        # Return the char** pointer and the number of strings
+        return char_array_ptr, num_byte_list
 
     def add_grammar_lazy(
             self,
@@ -862,13 +868,13 @@ class LlamaSampler:
             num_trigger_tokens: int,
             trigger_words: list[str]=[]
         ):
-        trigger_words_char_ptr_array, num_trigger_words = self.convert_list_str_to_char_ptr_array(trigger_words)
+        trigger_words_char_array_ptr, num_trigger_words = self.convert_list_str_to_char_array_ptr(trigger_words)
 
         sampler = llama_cpp.llama_sampler_init_grammar_lazy(
             model.vocab,
             grammar._grammar.encode("utf-8"),
             grammar._root.encode("utf-8"),
-            trigger_words_char_ptr_array,
+            trigger_words_char_array_ptr,
             num_trigger_words,
             trigger_tokens,
             num_trigger_tokens
@@ -884,12 +890,12 @@ class LlamaSampler:
             num_trigger_tokens: int,
             trigger_patterns: list[str]=[]
         ):
-        trigger_patterns_char_ptr_array, num_trigger_patterns = self.convert_list_str_to_char_ptr_array(trigger_patterns)
+        trigger_patterns_char_array_ptr, num_trigger_patterns = self.convert_list_str_to_char_array_ptr(trigger_patterns)
         sampler = llama_cpp.llama_sampler_init_grammar_lazy_patterns(
             model.vocab,
             grammar._grammar.encode("utf-8"),
             grammar._root.encode("utf-8"),
-            trigger_patterns_char_ptr_array,
+            trigger_patterns_char_array_ptr,
             num_trigger_patterns,
             trigger_tokens,
             num_trigger_tokens
@@ -924,19 +930,20 @@ class LlamaSampler:
         dry_base: float,
         dry_allowed_length: int,
         dry_penalty_last_n: int,
-        seq_breakers: list[str] = []
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"]
     ):
-        seq_breakers_bytes_char_ptr_array, num_breakers = self.convert_list_str_to_char_ptr_array(seq_breakers)
+
+        dry_seq_breakers_char_array_ptr, num_seq_breakers = self.convert_list_str_to_char_array_ptr(dry_seq_breakers)
 
         sampler = llama_cpp.llama_sampler_init_dry(
             model.vocab,
-            model.n_ctx_train,
+            model.n_ctx_train(),
             dry_multiplier,
             dry_base,
             dry_allowed_length,
             dry_penalty_last_n,
-            seq_breakers_bytes_char_ptr_array,
-            num_breakers
+            dry_seq_breakers_char_array_ptr,
+            num_seq_breakers
         )
         self._add_sampler(sampler)
 

@@ -682,6 +682,11 @@ class Llama:
         mirostat_tau: float = 5.0,
         xtc_threshold: float = 0.1,
         xtc_probability: float = 0.0,
+        dry_multiplier: float = 0.0,
+        dry_base: float = 1.75,
+        dry_allowed_length: int = 2,
+        dry_penalty_last_n:int = 0,
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         penalize_nl: bool = True,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
@@ -757,6 +762,7 @@ class Llama:
                 sampler.add_temp(temp)
                 sampler.add_dist(self._seed)
                 sampler.add_xtc(xtc_probability, xtc_threshold, min_keep, self._seed)
+                sampler.add_dry(self._model, dry_multiplier, dry_base, dry_allowed_length, dry_penalty_last_n, dry_seq_breakers)
         return sampler
 
     def sample(
@@ -775,6 +781,11 @@ class Llama:
         mirostat_tau: float = 5.0,
         xtc_threshold: float = 0.1,
         xtc_probability: float = 0.0,
+        dry_multiplier: float = 0.0,
+        dry_base: float = 1.75,
+        dry_allowed_length: int = 2,
+        dry_penalty_last_n:int = 0,
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         penalize_nl: bool = True,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
@@ -810,8 +821,13 @@ class Llama:
                 mirostat_mode=mirostat_mode,
                 mirostat_tau=mirostat_tau,
                 mirostat_eta=mirostat_eta,
-                xtc_threshold = xtc_threshold,
-                xtc_probability = xtc_probability,
+                xtc_threshold=xtc_threshold,
+                xtc_probability=xtc_probability,
+                dry_multiplier=dry_multiplier,
+                dry_base=dry_base,
+                dry_allowed_length=dry_allowed_length,
+                dry_penalty_last_n=dry_penalty_last_n,
+                dry_seq_breakers=dry_seq_breakers,
                 penalize_nl=penalize_nl,
                 logits_processor=logits_processor,
                 grammar=grammar,
@@ -843,6 +859,11 @@ class Llama:
         mirostat_eta: float = 0.1,
         xtc_threshold: float = 0.1,
         xtc_probability: float = 0.0,
+        dry_multiplier: float = 0.0,
+        dry_base: float = 1.75,
+        dry_allowed_length: int = 2,
+        dry_penalty_last_n:int = 0,
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         penalize_nl: bool = True,
         logits_processor: Optional[LogitsProcessorList] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
@@ -882,8 +903,13 @@ class Llama:
             mirostat_mode=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
-            xtc_threshold = xtc_threshold,
-            xtc_probability = xtc_probability,
+            xtc_threshold=xtc_threshold,
+            xtc_probability=xtc_probability,
+            dry_multiplier=dry_multiplier,
+            dry_base=dry_base,
+            dry_allowed_length=dry_allowed_length,
+            dry_penalty_last_n=dry_penalty_last_n,
+            dry_seq_breakers=dry_seq_breakers,
             penalize_nl=penalize_nl,
             logits_processor=logits_processor,
             grammar=grammar,
@@ -936,8 +962,13 @@ class Llama:
                     mirostat_mode=mirostat_mode,
                     mirostat_tau=mirostat_tau,
                     mirostat_eta=mirostat_eta,
-                    xtc_threshold = xtc_threshold,
-                    xtc_probability = xtc_probability,
+                    xtc_threshold=xtc_threshold,
+                    xtc_probability=xtc_probability,
+                    dry_multiplier=dry_multiplier,
+                    dry_base=dry_base,
+                    dry_allowed_length=dry_allowed_length,
+                    dry_penalty_last_n=dry_penalty_last_n,
+                    dry_seq_breakers=dry_seq_breakers,
                     logits_processor=logits_processor,
                     grammar=grammar,
                     penalize_nl=penalize_nl,
@@ -1156,6 +1187,11 @@ class Llama:
         mirostat_eta: float = 0.1,
         xtc_threshold: float = 0.1,
         xtc_probability: float = 0.0,
+        dry_multiplier: float = 0.0,
+        dry_base: float = 1.75,
+        dry_allowed_length: int = 2,
+        dry_penalty_last_n:int = 0,
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
@@ -1346,6 +1382,11 @@ class Llama:
             mirostat_eta=mirostat_eta,
             xtc_threshold=xtc_threshold,
             xtc_probability=xtc_probability,
+            dry_multiplier=dry_multiplier,
+            dry_base=dry_base,
+            dry_allowed_length=dry_allowed_length,
+            dry_penalty_last_n=dry_penalty_last_n,
+            dry_seq_breakers=dry_seq_breakers,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
             repeat_penalty=repeat_penalty,
@@ -1780,6 +1821,11 @@ class Llama:
         mirostat_eta: float = 0.1,
         xtc_threshold: float = 0.1,
         xtc_probability: float = 0.0,
+        dry_multiplier: float = 0.0,
+        dry_base: float = 1.75,
+        dry_allowed_length: int = 2,
+        dry_penalty_last_n:int = 0,
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
@@ -1811,6 +1857,11 @@ class Llama:
             mirostat_eta: The learning rate used to update `mu` based on the error between the target and observed surprisal of the sampled word. A larger learning rate will cause `mu` to be updated more quickly, while a smaller learning rate will result in slower updates.
             xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
             xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
+            dry_multiplier: Set the DRY (Don't Repeat Yourself) repetition penalty multiplier. Default: `0.0`, which is disabled.
+            dry_base`: Set the DRY repetition penalty base value. Default: `1.75`
+            dry_allowed_length: Tokens that extend repetition beyond this receive exponentially increasing penalty: multiplier * base ^ (length of repeating sequence before token - allowed length). Default: `2`
+            dry_penalty_last_n: How many tokens to scan for repetitions. Default: `0`, where `0` is disabled and `-1` is context size.
+            dry_seq_breakers: Specify an array of sequence breakers for DRY sampling. Only a JSON array of strings is accepted. Default: `['\n', ':', '"', '*']`
             model: The name to use for the model in the completion object.
             stopping_criteria: A list of stopping criteria to use.
             logits_processor: A list of logits processors to use.
@@ -1847,6 +1898,11 @@ class Llama:
             mirostat_eta=mirostat_eta,
             xtc_threshold=xtc_threshold,
             xtc_probability=xtc_probability,
+            dry_multiplier=dry_multiplier,
+            dry_base=dry_base,
+            dry_allowed_length=dry_allowed_length,
+            dry_penalty_last_n=dry_penalty_last_n,
+            dry_seq_breakers=dry_seq_breakers,
             model=model,
             stopping_criteria=stopping_criteria,
             logits_processor=logits_processor,
@@ -1883,6 +1939,11 @@ class Llama:
         mirostat_eta: float = 0.1,
         xtc_threshold: float = 0.1,
         xtc_probability: float = 0.0,
+        dry_multiplier: float = 0.0,
+        dry_base: float = 1.75,
+        dry_allowed_length: int = 2,
+        dry_penalty_last_n:int = 0,
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
@@ -1914,6 +1975,11 @@ class Llama:
             mirostat_eta: The learning rate used to update `mu` based on the error between the target and observed surprisal of the sampled word. A larger learning rate will cause `mu` to be updated more quickly, while a smaller learning rate will result in slower updates.
             xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
             xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
+            dry_multiplier: Set the DRY (Don't Repeat Yourself) repetition penalty multiplier. Default: `0.0`, which is disabled.
+            dry_base`: Set the DRY repetition penalty base value. Default: `1.75`
+            dry_allowed_length: Tokens that extend repetition beyond this receive exponentially increasing penalty: multiplier * base ^ (length of repeating sequence before token - allowed length). Default: `2`
+            dry_penalty_last_n: How many tokens to scan for repetitions. Default: `0`, where `0` is disabled and `-1` is context size.
+            dry_seq_breakers: Specify an array of sequence breakers for DRY sampling. Only a JSON array of strings is accepted. Default: `['\n', ':', '"', '*']`
             model: The name to use for the model in the completion object.
             stopping_criteria: A list of stopping criteria to use.
             logits_processor: A list of logits processors to use.
@@ -1950,6 +2016,11 @@ class Llama:
             mirostat_eta=mirostat_eta,
             xtc_threshold=xtc_threshold,
             xtc_probability=xtc_probability,
+            dry_multiplier=dry_multiplier,
+            dry_base=dry_base,
+            dry_allowed_length=dry_allowed_length,
+            dry_penalty_last_n=dry_penalty_last_n,
+            dry_seq_breakers=dry_seq_breakers,
             model=model,
             stopping_criteria=stopping_criteria,
             logits_processor=logits_processor,
@@ -1983,6 +2054,11 @@ class Llama:
         mirostat_eta: float = 0.1,
         xtc_threshold: float = 0.1,
         xtc_probability: float = 0.0,
+        dry_multiplier: float = 0.0,
+        dry_base: float = 1.75,
+        dry_allowed_length: int = 2,
+        dry_penalty_last_n:int = 0,
+        dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
@@ -2019,6 +2095,11 @@ class Llama:
             mirostat_eta: The mirostat sampling eta parameter.
             xtc-probability: Sets the chance for token removal (checked once on sampler start) (default: 0.0). XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
             xtc-threshold: Sets a minimum probability threshold for tokens to be removed (default: 0.1).XTC sampler as described in https://github.com/oobabooga/text-generation-webui/pull/6335
+            dry_multiplier: Set the DRY (Don't Repeat Yourself) repetition penalty multiplier. Default: `0.0`, which is disabled.
+            dry_base`: Set the DRY repetition penalty base value. Default: `1.75`
+            dry_allowed_length: Tokens that extend repetition beyond this receive exponentially increasing penalty: multiplier * base ^ (length of repeating sequence before token - allowed length). Default: `2`
+            dry_penalty_last_n: How many tokens to scan for repetitions. Default: `0`, where `0` is disabled and `-1` is context size.
+            dry_seq_breakers: Specify an array of sequence breakers for DRY sampling. Only a JSON array of strings is accepted. Default: `['\n', ':', '"', '*']`
             model: The name to use for the model in the completion object.
             logits_processor: A list of logits processors to use.
             grammar: A grammar to use.
@@ -2060,6 +2141,11 @@ class Llama:
             mirostat_eta=mirostat_eta,
             xtc_threshold=xtc_threshold,
             xtc_probability=xtc_probability,
+            dry_multiplier=dry_multiplier,
+            dry_base=dry_base,
+            dry_allowed_length=dry_allowed_length,
+            dry_penalty_last_n=dry_penalty_last_n,
+            dry_seq_breakers=dry_seq_breakers,
             model=model,
             logits_processor=logits_processor,
             grammar=grammar,

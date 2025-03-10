@@ -35,6 +35,11 @@ class GptParams:
     mirostat_eta: float = 0.1
     xtc_threshold: float = 0.1
     xtc_probability: float = 0.0
+    dry_multiplier: float = 0.0
+    dry_base: float = 1.75
+    dry_allowed_length: int = 2
+    dry_penalty_last_n:int = 0
+    dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"]
     model: str = "./models/llama-7B/ggml-model.bin"
     prompt: str = ""
     path_session: str = ""
@@ -211,7 +216,7 @@ def gpt_params_parse(argv=None):
         "--xtc_threshold",
         type=float,
         default=0.1,
-        help=" Sets a minimum probability threshold for tokens to be removed (default: 0.1)",
+        help="Sets a minimum probability threshold for tokens to be removed (default: 0.1)",
         dest="xtc_threshold",
     )
 
@@ -219,8 +224,40 @@ def gpt_params_parse(argv=None):
         "--xtc_probability",
         type=float,
         default=0.0,
-        help="ets the chance for token removal (checked once on sampler start) (default: 0.0)",
+        help="Sets the chance for token removal (checked once on sampler start) (default: 0.0)",
         dest="xtc_probability",
+    )
+
+    parser.add_argument(
+        "--dry_multiplier",
+        type=float,
+        default=0.0,
+        help="Set the DRY repetition penalty multiplier. Default is 0.0, which disables DRY.",
+        dest="dry_multiplier",
+    )
+
+    parser.add_argument(
+        "--dry_base",
+        type=float,
+        default=1.75,
+        help="Set the DRY repetition penalty base value. Default is 1.75",
+        dest="dry_base",
+    )
+
+    parser.add_argument(
+        "--dry_allowed_length",
+        type=int,
+        default=2,
+        help="Tokens that extend repetition beyond this receive exponentially increasing penalty. Default is 2",
+        dest="dry_allowed_length",
+    )
+
+    parser.add_argument(
+        "--dry_penalty_last_n",
+        type=int,
+        default=0,
+        help="How many tokens to scan for repetitions. Default is 0, where 0 is disabled and -1 is context size",
+        dest="dry_penalty_last_n",
     )
 
     parser.add_argument(

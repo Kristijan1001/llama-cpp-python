@@ -286,6 +286,12 @@ mirostat_ent = {self.params.mirostat_tau},\
 xtc_threshold = {self.params.xtc_threshold},\
 xtc_probability = {self.params.xtc_probability},\
 
+dry_multiplier = {self.params.dry_multiplier},\
+dry_base = {self.params.dry_base},\
+dry_allowed_length = {self.params.dry_allowed_length},\
+dry_penalty_last_n = {self.params.dry_penalty_last_n},\
+dry_seq_breakers = {self.params.dry_seq_breakers},\
+
 generate: n_ctx = {self.n_ctx},\
 n_batch = {self.params.n_batch},\
 n_predict = {self.params.n_predict},\

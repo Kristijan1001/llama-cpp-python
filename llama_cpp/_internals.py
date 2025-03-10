@@ -584,6 +584,9 @@ class LlamaSamplingParams:
     mirostat_eta: float = 0.10
     penalize_nl: bool = True
 
+    xtc_threshold: float = 0.1
+    xtc_probability: float = 0.0
+
     grammar: str = ""
 
     cfg_negative_prompt: str = ""
@@ -727,7 +730,7 @@ import llama_cpp
 
 class CustomSampler:
     def __init__(
-        self, apply_func: typing.Callable[[llama_cpp.llama_token_data_array], None]
+        self, apply_func: Callable[[llama_cpp.llama_token_data_array], None]
     ):
         self.apply_func = apply_func
 
@@ -917,7 +920,6 @@ class LlamaSampler:
     def add_dry(
         self,
         model: LlamaModel,
-        n_ctx_train: int,
         dry_multiplier: float,
         dry_base: float,
         dry_allowed_length: int,
@@ -925,9 +927,10 @@ class LlamaSampler:
         seq_breakers: list[str] = []
     ):
         seq_breakers_bytes_char_ptr_array, num_breakers = self.convert_list_str_to_char_ptr_array(seq_breakers)
+
         sampler = llama_cpp.llama_sampler_init_dry(
             model.vocab,
-            n_ctx_train,
+            model.n_ctx_train,
             dry_multiplier,
             dry_base,
             dry_allowed_length,

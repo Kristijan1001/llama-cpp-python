@@ -32,6 +32,7 @@ import llama_cpp.llama as llama
 import llama_cpp.llama_types as llama_types
 import llama_cpp.llama_grammar as llama_grammar
 
+from ._ggml import GGMLLogLevel
 from ._logger import logger
 from ._utils import suppress_stdout_stderr, Singleton
 
@@ -2776,11 +2777,13 @@ class Llava15ChatHandler:
         "{% endif %}"
     )
 
-    def __init__(self, clip_model_path: str, verbose: bool = True):
+    def __init__(self, clip_model_path: str, use_gpu:bool = True, verbosity : GGMLLogLevel = GGMLLogLevel.GGML_LOG_LEVEL_DEBUG):
         import llama_cpp.llava_cpp as llava_cpp
 
         self.clip_model_path = clip_model_path
-        self.verbose = verbose
+        self.ctx_clip_params = self._llava_cpp.clip_context_params
+        self.ctx_clip_params.use_gpu = use_gpu
+        self.ctx_clip_params.ggml_log_level = verbosity
 
         self._llava_cpp = llava_cpp  # TODO: Fix
         self._exit_stack = ExitStack()
@@ -2792,25 +2795,22 @@ class Llava15ChatHandler:
         if not os.path.exists(clip_model_path):
             raise ValueError(f"Clip model path does not exist: {clip_model_path}")
 
-        with suppress_stdout_stderr(disable=self.verbose):
-            clip_ctx = self._llava_cpp.clip_model_load(self.clip_model_path.encode(), 0)
+        clip_ctx = self._llava_cpp.clip_init(self.clip_model_path.encode(), self.ctx_clip_params)
 
-            if clip_ctx is None:
-                raise ValueError(f"Failed to load clip model: {clip_model_path}")
+        if clip_ctx is None:
+            raise ValueError(f"Failed to load clip model: {clip_model_path}")
 
-            self.clip_ctx = clip_ctx
+        self.clip_ctx = clip_ctx
 
-            def clip_free():
-                with suppress_stdout_stderr(disable=self.verbose):
-                    self._llava_cpp.clip_free(self.clip_ctx)
+        def clip_free():
+            self._llava_cpp.clip_free(self.clip_ctx)
 
-            self._exit_stack.callback(clip_free)
+        self._exit_stack.callback(clip_free)
 
         def last_image_embed_free():
-            with suppress_stdout_stderr(disable=self.verbose):
-                if self._last_image_embed is not None:
-                    self._llava_cpp.llava_image_embed_free(self._last_image_embed)
-                    self._last_image_embed = None
+            if self._last_image_embed is not None:
+                self._llava_cpp.llava_image_embed_free(self._last_image_embed)
+                self._last_image_embed = None
 
         self._exit_stack.callback(last_image_embed_free)
 

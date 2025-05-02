@@ -1,4 +1,4 @@
-name: Build Wheels for Linux # Workflow name
+name: Build Wheels(CUDA) for Linux # Workflow name
 
 on:
   workflow_dispatch: # Manual trigger
@@ -51,18 +51,21 @@ jobs:
       - run: nvcc -V
 
       - name: Build Wheel With Cmake # Main build step: configures and builds the wheel
+        env:
+          LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/compat:/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+          VERBOSE: 1 # Enable verbose build output
+          CUDA_HOME: "/usr/local/cuda/" # Set CUDA_HOME
+          CUDA_PATH: "${PATH}"
+          CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda/" # Set CUDA_TOOLKIT_ROOT_DIR
         run: |
           echo "VERBOSE=1" >> $GITHUB_ENV # Enable verbose build output for troubleshooting
-
-          echo "CUDA_HOME=/usr/local/cuda/" >> $GITHUB_ENV
-          echo "CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda/" >> $GITHUB_ENV
-          echo "CUDA_PATH = ${PATH}" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH = '${PATH}:${LD_LIBRARY_PATH}'"
+          find /usr/ -name 'libcuda.so.*'
+          echo $LD_LIBRARY_PATH
 
           # Add project-specific and feature flags
           CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES='80-real;86-real;89-real'"
           CMAKE_ARGS="-DGGML_CUDA_FORCE_MMQ=ON ${CMAKE_ARGS}"
-          CMAKE_ARGS="${CMAKE_ARGS} -DLLAMA_CURL=ON -DLLAVA_BUILD=OFF"
+          CMAKE_ARGS="${CMAKE_ARGS} -DLLAMA_CURL=ON"
 
           if [ "${AVXVER}" = "AVX" ]; then
             CMAKE_ARGS="${CMAKE_ARGS} -DGGML_AVX2=off -DGGML_FMA=off -DGGML_F16C=off"
@@ -83,7 +86,7 @@ jobs:
 
           # Run the Python build command to generate the wheel
           uv pip install build setuptools wheel packaging
-          uv pip install -U torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+          # uv pip install -U torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
           CMAKE_ARGS=${CMAKE_ARGS} uv build --wheel
 
           # --- Post-build steps to get info for release tag ---

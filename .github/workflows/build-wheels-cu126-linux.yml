@@ -1,4 +1,4 @@
-name: Build Wheels(CUDA) for Linux # Workflow name
+name: Build Wheels(CU126) for Linux # Workflow name
 
 on:
   workflow_dispatch: # Manual trigger
@@ -10,13 +10,11 @@ jobs:
   build_wheels:
     name: Build Wheel ${{ matrix.os }} ${{ matrix.pyver }} ${{ matrix.cuda }} ${{ matrix.releasetag == 'wheels' && 'AVX2' || matrix.releasetag }}
     runs-on: ubuntu-22.04
-    # container: nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
     container: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
     strategy:
       matrix: # Define the build matrix directly here
         os: ["ubuntu-22.04"]
         pyver: ["3.10", "3.11", "3.12"] # Python versions
-        # cuda: ["12.4.1"]
         cuda: ["12.6.3"]
         releasetag: ["AVX2"] # Controls CMAKE_ARGS for CPU features (even in CUDA build)
         cudaarch: ["all"] # Controls target CUDA architectures for nvcc

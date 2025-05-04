@@ -55,6 +55,10 @@ ctypes_function = ctypes_function_for_shared_library(_libllava)
 clip_ctx_p = NewType("clip_ctx_p", int)
 clip_ctx_p_ctypes = c_void_p
 
+# struct clip_image_u8;
+clip_image_u8_p = NewType("clip_image_u8_p", int)
+clip_image_u8_p_ctypes = c_void_p
+
 
 # struct llava_image_embed {
 #     float * embed;
@@ -79,19 +83,35 @@ def llava_validate_embed_size(
 ) -> bool:
     ...
 
+# LLAVA_API bool llava_image_embed_make_with_clip_img(struct clip_ctx * ctx_clip, int n_threads, const struct clip_image_u8 * img, float ** image_embd_out, int * n_img_pos_out);
+@ctypes_function(
+    "llava_image_embed_make_with_clip_img",
+    [clip_ctx_p_ctypes, c_int, clip_image_u8_p_ctypes, POINTER(POINTER(c_float)), POINTER(c_int)],
+    c_bool
+)
+def llava_image_embed_make_with_clip_img(
+    ctx_clip: clip_ctx_p,
+    n_threads: int,
+    img: clip_image_u8_p,
+    image_embd_out: _Pointer[_Pointer[c_float]],
+    n_img_pos_out: _Pointer[c_int],
+    /,
+) -> bool:
+    ...
+
 
 # /** build an image embed from image file bytes */
 # LLAVA_API struct llava_image_embed * llava_image_embed_make_with_bytes(struct clip_ctx * ctx_clip, int n_threads, const unsigned char * image_bytes, int image_bytes_length);
 @ctypes_function(
     "llava_image_embed_make_with_bytes",
-    [clip_ctx_p_ctypes, c_int, POINTER(c_uint8), c_int],
+    [clip_ctx_p_ctypes, c_int, c_char_p, c_int],
     POINTER(llava_image_embed),
 )
 def llava_image_embed_make_with_bytes(
     ctx_clip: clip_ctx_p,
-    n_threads: Union[c_int, int],
-    image_bytes: CtypesArray[c_uint8],
-    image_bytes_length: Union[c_int, int],
+    n_threads: c_int,
+    image_bytes: c_char_p,
+    image_bytes_length: c_int,
     /,
 ) -> "_Pointer[llava_image_embed]":
     ...
@@ -105,7 +125,7 @@ def llava_image_embed_make_with_bytes(
     POINTER(llava_image_embed),
 )
 def llava_image_embed_make_with_filename(
-    ctx_clip: clip_ctx_p, n_threads: Union[c_int, int], image_path: bytes, /
+    ctx_clip: clip_ctx_p, n_threads: c_int, image_path: c_char_p, /
 ) -> "_Pointer[llava_image_embed]":
     ...
 
@@ -143,17 +163,13 @@ def llava_eval_image_embed(
 # clip.h
 ################################################
 
-# struct clip_image_f32;
-clip_image_f32_p = NewType("clip_image_f32_p", int)
-clip_image_f32_p_ctypes = c_void_p
-
-# struct clip_image_u8;
-clip_image_u8_p = NewType("clip_image_u8_p", int)
-clip_image_u8_p_ctypes = c_void_p
-
 # struct clip_image_u8_batch;
 clip_image_u8_batch_p = NewType("clip_image_u8_batch_p", int)
 clip_image_u8_batch_p_ctypes = c_void_p
+
+# struct clip_image_f32;
+clip_image_f32_p = NewType("clip_image_f32_p", int)
+clip_image_f32_p_ctypes = c_void_p
 
 # struct clip_image_f32_batch;
 clip_image_f32_batch_p = NewType("clip_image_f32_batch_p", int)
@@ -449,7 +465,7 @@ def clip_image_encode(
     ctx: clip_ctx_p,
     n_threads: int,
     img: clip_image_f32_p,
-    vec: POINTER(c_float), /
+    vec: _Pointer[c_float], /
 ) -> bool:
     ...
 
@@ -459,7 +475,7 @@ def clip_image_batch_encode(
     ctx: clip_ctx_p,
     n_threads: int,
     imgs: clip_image_f32_batch_p,
-    vec: POINTER(c_float), /
+    vec: _Pointer[c_float], /
 ) -> bool:
     ...
 
@@ -502,9 +518,9 @@ def clip_is_gemma3(ctx: clip_ctx_p) -> bool:
 def clip_n_output_tokens(
     ctx: clip_ctx_p,
     n_threads: int,
-    img: POINTER(float),
+    img: _Pointer[float],
     h: int,
     w: int,
-    vec: POINTER(float),/
+    vec: _Pointer[float],/
 ) -> bool:
     ...

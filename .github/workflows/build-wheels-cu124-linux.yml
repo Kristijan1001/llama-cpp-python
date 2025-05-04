@@ -99,7 +99,7 @@ jobs:
           tag_ver=$(basename "$wheel_file" | cut -d'-' -f 2)
           echo "TAG_VERSION=$tag_ver" >> $GITHUB_ENV # Store version in env for release step
 
-          # Extract the short CUDA version (e.g., 126) from the full version (e.g., 12.6.3) from the matrix variable
+          # Extract the short CUDA version (e.g., 124) from the full version (e.g., 12.4.1) from the matrix variable
           cuda_ver_short=$(echo "${CUDAVER}" | cut -d'.' -f 1,2 | sed 's/\.//g')
           echo "CUDA_VERSION=$cuda_ver_short" >> $GITHUB_ENV # Store short CUDA version in env
 

@@ -261,7 +261,6 @@ class LlamaProxy:
             yarn_beta_slow=settings.yarn_beta_slow,
             yarn_orig_ctx=settings.yarn_orig_ctx,
             mul_mat_q=settings.mul_mat_q,
-            logits_all=settings.logits_all,
             embedding=settings.embedding,
             offload_kqv=settings.offload_kqv,
             flash_attn=settings.flash_attn,

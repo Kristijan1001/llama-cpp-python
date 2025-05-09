@@ -81,7 +81,6 @@ def test_real_model(llama_cpp_model_path):
     cparams.n_ubatch = 16
     cparams.n_threads = multiprocessing.cpu_count()
     cparams.n_threads_batch = multiprocessing.cpu_count()
-    cparams.logits_all = False
     cparams.flash_attn = True
 
     context = internals.LlamaContext(model=model, params=cparams)
@@ -103,7 +102,7 @@ def test_real_model(llama_cpp_model_path):
     result = tokens
     n_eval = 0
     for _ in range(4):
-        batch.set_batch(tokens, n_past=n_eval, logits_all=False)
+        batch.set_batch(tokens, n_past=n_eval)
         context.decode(batch)
         n_eval += len(tokens)
         token_id = sampler.sample(context, -1)
@@ -122,7 +121,6 @@ def test_real_llama(llama_cpp_model_path):
         n_ubatch=32,
         n_threads=multiprocessing.cpu_count(),
         n_threads_batch=multiprocessing.cpu_count(),
-        logits_all=False,
         flash_attn=True,
     )
 

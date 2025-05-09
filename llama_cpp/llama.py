@@ -89,7 +89,6 @@ class Llama:
         yarn_beta_fast: float = 32.0,
         yarn_beta_slow: float = 1.0,
         yarn_orig_ctx: int = 0,
-        logits_all: bool = False,
         embedding: bool = False,
         offload_kqv: bool = True,
         flash_attn: bool = False,
@@ -170,7 +169,6 @@ class Llama:
             yarn_beta_fast: YaRN low correction dim
             yarn_beta_slow: YaRN high correction dim
             yarn_orig_ctx: YaRN original context size
-            logits_all: Return logits for all tokens, not just the last token. Must be True for completion to return logprobs.
             embedding: Embedding mode only.
             offload_kqv: Offload K, Q, V to GPU.
             flash_attn: Use flash attention.
@@ -341,9 +339,6 @@ class Llama:
             yarn_beta_slow if yarn_beta_slow != 0.0 else 0
         )
         self.context_params.yarn_orig_ctx = yarn_orig_ctx if yarn_orig_ctx != 0 else 0
-        self.context_params.logits_all = (
-            logits_all if draft_model is None else True
-        )  # Must be set to True for speculative decoding
         self.context_params.embeddings = embedding  # TODO: Rename to embeddings
         self.context_params.offload_kqv = offload_kqv
         self.context_params.flash_attn = flash_attn
@@ -457,9 +452,7 @@ class Llama:
 
         self.n_tokens = 0
         self.input_ids: npt.NDArray[np.intc] = np.ndarray((n_ctx,), dtype=np.intc)
-        self.scores: npt.NDArray[np.single] = np.ndarray(
-            (n_ctx if logits_all == True else n_batch, self._n_vocab), dtype=np.single
-        )
+        self.scores: npt.NDArray[np.single] = np.ndarray((n_batch, self._n_vocab), dtype=np.single)
 
         self._mirostat_mu = ctypes.c_float(
             2.0 * 5.0
@@ -568,7 +561,7 @@ class Llama:
     def eval_logits(self) -> Deque[List[float]]:
         return deque(
             self.scores[: self.n_tokens, :].tolist(),
-            maxlen=self._n_ctx if self.context_params.logits_all else 1,
+            maxlen=self._n_ctx
         )
 
     def tokenize(
@@ -635,34 +628,18 @@ class Llama:
         Args:
             tokens: The list of tokens to evaluate.
         """
-        self._ctx.kv_cache_seq_rm(-1, self.n_tokens, -1)
+        self._ctx.kv_self_seq_rm(-1, self.n_tokens, -1)
         for i in range(0, len(tokens), self.n_batch):
             batch = tokens[i : min(len(tokens), i + self.n_batch)]
             n_past = self.n_tokens
             n_tokens = len(batch)
             self._batch.set_batch(
-                batch=batch, n_past=n_past, logits_all=self.context_params.logits_all
+                batch=batch, n_past=n_past
             )
             self._ctx.decode(self._batch)
             # Save tokens
             self.input_ids[n_past : n_past + n_tokens] = batch
-            # Save logits
-            if self.context_params.logits_all:
-                rows = n_tokens
-                cols = self._n_vocab
-                logits = np.ctypeslib.as_array(
-                    self._ctx.get_logits(), shape=(rows * cols,)
-                )
-                self.scores[n_past : n_past + n_tokens, :].reshape(-1)[::] = logits
-            else:
-                # rows = 1
-                # cols = self._n_vocab
-                # logits = np.ctypeslib.as_array(
-                #     self._ctx.get_logits(), shape=(rows * cols,)
-                # )
-                # self.scores[n_past + n_tokens - 1, :].reshape(-1)[::] = logits
-                # NOTE: Now that sampling is done inside the sampler, logits are only needed for logprobs which requires logits_all
-                pass
+
             # Update n_tokens
             self.n_tokens += n_tokens
 
@@ -988,7 +965,7 @@ class Llama:
 
                 if sample_idx < self.n_tokens and token != self._input_ids[sample_idx]:
                     self.n_tokens = sample_idx
-                    self._ctx.kv_cache_seq_rm(-1, self.n_tokens, -1)
+                    self._ctx.kv_self_seq_rm(-1, self.n_tokens, -1)
                     break
 
             if self.draft_model is not None:
@@ -1062,7 +1039,6 @@ class Llama:
 
         # get pooling information
         pooling_type = self.pooling_type()
-        logits_all = pooling_type == llama_cpp.LLAMA_POOLING_TYPE_NONE
 
         if self.context_params.embeddings is False:
             raise RuntimeError(
@@ -1140,7 +1116,7 @@ class Llama:
                 p_batch = 0
 
             # add to batch
-            self._batch.add_sequence(tokens, p_batch, logits_all)
+            self._batch.add_sequence(tokens, p_batch)
 
             # update batch stats
             s_batch.append(n_tokens)
@@ -1340,9 +1316,9 @@ class Llama:
         else:
             stop_sequences = []
 
-        if logprobs is not None and self.context_params.logits_all is False:
+        if logprobs is not None:
             raise ValueError(
-                "logprobs is not supported for models created with logits_all=False"
+                "logprobs is not supported for models"
             )
 
         if self.cache:
@@ -2213,7 +2189,6 @@ class Llama:
             yarn_beta_fast=self.context_params.yarn_beta_fast,
             yarn_beta_slow=self.context_params.yarn_beta_slow,
             yarn_orig_ctx=self.context_params.yarn_orig_ctx,
-            logits_all=self.context_params.logits_all,
             embedding=self.context_params.embeddings,
             offload_kqv=self.context_params.offload_kqv,
             flash_attn=self.context_params.flash_attn,

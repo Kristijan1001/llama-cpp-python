@@ -98,7 +98,6 @@ class ModelSettings(BaseSettings):
     mul_mat_q: bool = Field(
         default=True, description="if true, use experimental mul_mat_q kernels"
     )
-    logits_all: bool = Field(default=True, description="Whether to return logits.")
     embedding: bool = Field(default=False, description="Whether to use embeddings.")
     offload_kqv: bool = Field(
         default=True, description="Whether to offload kqv to the GPU."

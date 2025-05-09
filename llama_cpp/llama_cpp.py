@@ -751,7 +751,7 @@ class llama_model_params(ctypes.Structure):
 
 
 # // NOTE: changing the default values of parameters marked as [EXPERIMENTAL] may cause crashes or incorrect results in certain configurations
-# //       https://github.com/ggerganov/llama.cpp/pull/7544
+# //       https://github.com/ggml-org/llama.cpp/pull/7544
 # struct llama_context_params {
 #     uint32_t n_ctx;             // text context, 0 = from model
 #     uint32_t n_batch;           // logical maximum batch size that can be submitted to llama_decode
@@ -764,7 +764,7 @@ class llama_model_params(ctypes.Structure):
 #     enum llama_pooling_type      pooling_type;      // whether to pool (sum) embedding results by sequence id
 #     enum llama_attention_type    attention_type;    // attention type to use for embeddings
 
-#     // ref: https://github.com/ggerganov/llama.cpp/pull/2054
+#     // ref: https://github.com/ggml-org/llama.cpp/pull/2054
 #     float    rope_freq_base;   // RoPE base frequency, 0 = from model
 #     float    rope_freq_scale;  // RoPE frequency scaling factor, 0 = from model
 #     float    yarn_ext_factor;  // YaRN extrapolation mix factor, negative = from model
@@ -779,20 +779,17 @@ class llama_model_params(ctypes.Structure):
 
 #     enum ggml_type type_k; // data type for K cache [EXPERIMENTAL]
 #     enum ggml_type type_v; // data type for V cache [EXPERIMENTAL]
-
-#     // Keep the booleans together to avoid misalignment during copy-by-value.
-#     bool logits_all;  // the llama_decode() call computes all logits, not just the last one (DEPRECATED - set llama_batch.logits instead)
-#     bool embeddings;  // if true, extract embeddings (together with logits)
-#     bool offload_kqv; // whether to offload the KQV ops (including the KV cache) to GPU
-#     bool flash_attn;  // whether to use flash attention [EXPERIMENTAL]
-#     bool no_perf;     // whether to measure performance timings
-
-
 #     // Abort callback
 #     // if it returns true, execution of llama_decode() will be aborted
 #     // currently works only with CPU execution
 #     ggml_abort_callback abort_callback;
 #     void *              abort_callback_data;
+
+#     // Keep the booleans together and at the end of the struct to avoid misalignment during copy-by-value.
+#     bool embeddings;  // if true, extract embeddings (together with logits)
+#     bool offload_kqv; // whether to offload the KQV ops (including the KV cache) to GPU
+#     bool flash_attn;  // whether to use flash attention [EXPERIMENTAL]
+#     bool no_perf;     // whether to measure performance timings
 # };
 class llama_context_params(ctypes.Structure):
     """Parameters for llama_context
@@ -819,13 +816,12 @@ class llama_context_params(ctypes.Structure):
         cb_eval_user_data (ctypes.ctypes.c_void_p): user data for cb_eval
         type_k (int): data type for K cache
         type_v (int): data type for V cache
-        logits_all (bool): the llama_decode() call computes all logits, not just the last one (DEPRECATED - set llama_batch.logits instead)
+        abort_callback (ggml_abort_callback): abort callback if it returns true, execution of llama_decode() will be aborted
+        abort_callback_data (ctypes.ctypes.c_void_p): data for abort_callback
         embeddings (bool): if true, extract embeddings (together with logits)
         offload_kqv (bool): whether to offload the KQV ops (including the KV cache) to GPU
         flash_attn (bool): whether to use flash attention
         no_perf (bool): whether to measure performance timings
-        abort_callback (ggml_abort_callback): abort callback if it returns true, execution of llama_decode() will be aborted
-        abort_callback_data (ctypes.ctypes.c_void_p): data for abort_callback
     """
 
     if TYPE_CHECKING:
@@ -850,13 +846,12 @@ class llama_context_params(ctypes.Structure):
         cb_eval_user_data: ctypes.c_void_p
         type_k: int
         type_v: int
-        logits_all: bool
+        abort_callback: Callable[[ctypes.c_void_p], bool]
+        abort_callback_data: ctypes.c_void_p
         embeddings: bool
         offload_kqv: bool
         flash_attn: bool
         no_perf: bool
-        abort_callback: Callable[[ctypes.c_void_p], bool]
-        abort_callback_data: ctypes.c_void_p
 
     _fields_ = [
         ("n_ctx", ctypes.c_uint32),
@@ -880,13 +875,12 @@ class llama_context_params(ctypes.Structure):
         ("cb_eval_user_data", ctypes.c_void_p),
         ("type_k", ctypes.c_int),
         ("type_v", ctypes.c_int),
-        ("logits_all", ctypes.c_bool),
+        ("abort_callback", ggml_abort_callback),
+        ("abort_callback_data", ctypes.c_void_p),
         ("embeddings", ctypes.c_bool),
         ("offload_kqv", ctypes.c_bool),
         ("flash_attn", ctypes.c_bool),
         ("no_perf", ctypes.c_bool),
-        ("abort_callback", ggml_abort_callback),
-        ("abort_callback_data", ctypes.c_void_p),
     ]
 
 
@@ -2683,10 +2677,12 @@ def llama_batch_free(batch: llama_batch, /):
     ...
 
 
-# // Processes a batch of tokens with the ecoder part of the encoder-decoder model.
-# // Stores the encoder output internally for later use by the decoder cross-attention layers.
+# // Process a batch of tokens.
+# // In contrast to llama_decode() - this call does not use KV cache.
+# // For encode-decoder contexts, processes the batch using the encoder.
+# // Can store the encoder output internally for later use by the decoder's cross-attention layers.
 # //   0 - success
-# // < 0 - error
+# // < 0 - error. the KV cache state is restored to the state before this call
 # LLAMA_API int32_t llama_encode(
 #         struct llama_context * ctx,
 #           struct llama_batch   batch);
@@ -2699,10 +2695,13 @@ def llama_encode(ctx: llama_context_p, batch: llama_batch, /) -> int:
     ...
 
 
+# // Process a batch of tokens.
+# // Requires KV cache.
+# // For encode-decoder contexts, processes the batch using the decoder.
 # // Positive return values does not mean a fatal error, but rather a warning.
 # //   0 - success
 # //   1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
-# // < 0 - error
+# // < 0 - error. the KV cache state is restored to the state before this call
 # LLAMA_API int32_t llama_decode(
 #         struct llama_context * ctx,
 #           struct llama_batch   batch);

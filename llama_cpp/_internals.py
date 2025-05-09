@@ -279,23 +279,35 @@ class LlamaContext:
     def pooling_type(self) -> int:
         return llama_cpp.llama_pooling_type(self.ctx)
 
-    def kv_cache_clear(self):
-        llama_cpp.llama_kv_cache_clear(self.ctx)
+    def kv_self_clear(self):
+        llama_cpp.llama_kv_self_clear(self.ctx)
 
-    def kv_cache_seq_rm(self, seq_id: int, p0: int, p1: int):
-        llama_cpp.llama_kv_cache_seq_rm(self.ctx, seq_id, p0, p1)
+    def kv_self_seq_rm(self, seq_id: int, p0: int, p1: int):
+        llama_cpp.llama_kv_self_seq_rm(self.ctx, seq_id, p0, p1)
 
-    def kv_cache_seq_cp(self, seq_id_src: int, seq_id_dst: int, p0: int, p1: int):
-        llama_cpp.llama_kv_cache_seq_cp(self.ctx, seq_id_src, seq_id_dst, p0, p1)
+    def kv_self_seq_cp(self, seq_id_src: int, seq_id_dst: int, p0: int, p1: int):
+        llama_cpp.llama_kv_self_seq_cp(self.ctx, seq_id_src, seq_id_dst, p0, p1)
 
-    def kv_cache_seq_keep(self, seq_id: int):
-        llama_cpp.llama_kv_cache_seq_keep(self.ctx, seq_id)
+    def kv_self_seq_keep(self, seq_id: int):
+        llama_cpp.llama_kv_self_seq_keep(self.ctx, seq_id)
 
-    def kv_cache_seq_shift(self, seq_id: int, p0: int, p1: int, shift: int):
-        llama_cpp.llama_kv_cache_seq_add(self.ctx, seq_id, p0, p1, shift)
+    def kv_self_seq_add(self, seq_id: int, p0: int, p1: int, delta: int):
+        llama_cpp.llama_kv_self_seq_add(self.ctx, seq_id, p0, p1, delta)
+
+    def kv_self_seq_div(self, seq_id: int, p0: int, p1: int, d: int):
+        llama_cpp.llama_kv_self_seq_div(self.ctx, seq_id, p0, p1, d)
+
+    def kv_self_seq_pos_max(self, seq_id: int):
+        llama_cpp.llama_kv_self_seq_pos_max(self.ctx, seq_id)
+
+    def kv_self_defrag(self):
+        llama_cpp.llama_kv_self_defrag(self.ctx)
+
+    def kv_self_can_shift(self) -> bool:
+        llama_cpp.llama_kv_self_can_shift(self.ctx)
 
     def get_state_size(self) -> int:
-        return llama_cpp.llama_get_state_size(self.ctx)
+        return llama_cpp.llama_state_get_size(self.ctx)
 
     # TODO: copy_state_data
 
@@ -502,7 +514,7 @@ class LlamaBatch:
     def reset(self):
         self.batch.n_tokens = 0
 
-    def set_batch(self, batch: Sequence[int], n_past: int, logits_all: bool):
+    def set_batch(self, batch: Sequence[int], n_past: int):
         n_tokens = len(batch)
         self.batch.n_tokens = n_tokens
         for i in range(n_tokens):
@@ -510,10 +522,8 @@ class LlamaBatch:
             self.batch.pos[i] = n_past + i
             self.batch.seq_id[i][0] = 0
             self.batch.n_seq_id[i] = 1
-            self.batch.logits[i] = logits_all
-        self.batch.logits[n_tokens - 1] = True
 
-    def add_sequence(self, batch: Sequence[int], seq_id: int, logits_all: bool):
+    def add_sequence(self, batch: Sequence[int], seq_id: int):
         n_tokens = len(batch)
         n_tokens0 = self.batch.n_tokens
         self.batch.n_tokens += n_tokens
@@ -523,8 +533,6 @@ class LlamaBatch:
             self.batch.pos[j] = i
             self.batch.seq_id[j][0] = seq_id
             self.batch.n_seq_id[j] = 1
-            self.batch.logits[j] = logits_all
-        self.batch.logits[n_tokens - 1] = True
 
 
 class LlamaTokenDataArray:

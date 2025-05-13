@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-import os
 import ctypes
+import os
 import pathlib
+
+from ._ggml import (
+    ggml_opt_get_optimizer_params
+)
 
 from typing import (
     Callable,
@@ -171,6 +175,10 @@ llama_context_p_ctypes = ctypes.c_void_p
 # llama_sampler_p = NewType("llama_sampler_p", int)
 # llama_sampler_p_ctypes = ctypes.c_void_p
 
+# struct llama_opt_params;
+llama_opt_params_p = NewType("llama_opt_params_p", int)
+llama_opt_params_p_ctypes = ctypes.c_void_p
+
 # struct llama_kv_cache;
 llama_kv_cache_p = NewType("llama_kv_cache_p", int)
 llama_kv_cache_p_ctypes = ctypes.c_void_p
@@ -243,6 +251,7 @@ LLAMA_VOCAB_TYPE_RWKV = 5
 #     LLAMA_VOCAB_PRE_TYPE_BAILINGMOE     = 32,
 #     LLAMA_VOCAB_PRE_TYPE_LLAMA4         = 33,
 #     LLAMA_VOCAB_PRE_TYPE_PIXTRAL        = 34,
+#     LLAMA_VOCAB_PRE_TYPE_SEED_CODER     = 35,
 # };
 LLAMA_VOCAB_PRE_TYPE_DEFAULT = 0
 LLAMA_VOCAB_PRE_TYPE_LLAMA3 = 1
@@ -279,6 +288,7 @@ LLAMA_VOCAB_PRE_TYPE_TRILLION = 31
 LLAMA_VOCAB_PRE_TYPE_BAILINGMOE = 32
 LLAMA_VOCAB_PRE_TYPE_LLAMA4 = 33
 LLAMA_VOCAB_PRE_TYPE_PIXTRAL = 34
+LLAMA_VOCAB_PRE_TYPE_SEED_CODER = 35
 
 
 # // note: these values should be synchronized with ggml_rope
@@ -790,6 +800,7 @@ class llama_model_params(ctypes.Structure):
 #     bool offload_kqv; // whether to offload the KQV ops (including the KV cache) to GPU
 #     bool flash_attn;  // whether to use flash attention [EXPERIMENTAL]
 #     bool no_perf;     // whether to measure performance timings
+#     bool op_offload;  // whether to offload host tensor operations to device
 # };
 class llama_context_params(ctypes.Structure):
     """Parameters for llama_context
@@ -811,7 +822,7 @@ class llama_context_params(ctypes.Structure):
         yarn_beta_fast (float): YaRN low correction dim
         yarn_beta_slow (float): YaRN high correction dim
         yarn_orig_ctx (int): YaRN original context size
-        defrag_thold (float): defragment the KV cache if holes/size > thold, < 0 disabled (default)
+        defrag_thold (float): defragment the KV cache if holes/size > thold, <= 0 disabled (default)
         cb_eval (ggml_backend_sched_eval_callback): callback for scheduling eval
         cb_eval_user_data (ctypes.ctypes.c_void_p): user data for cb_eval
         type_k (int): data type for K cache
@@ -822,6 +833,7 @@ class llama_context_params(ctypes.Structure):
         offload_kqv (bool): whether to offload the KQV ops (including the KV cache) to GPU
         flash_attn (bool): whether to use flash attention
         no_perf (bool): whether to measure performance timings
+        op_offload(bool): whether to offload host tensor operations to device
     """
 
     if TYPE_CHECKING:
@@ -852,6 +864,7 @@ class llama_context_params(ctypes.Structure):
         offload_kqv: bool
         flash_attn: bool
         no_perf: bool
+        op_offload:bool
 
     _fields_ = [
         ("n_ctx", ctypes.c_uint32),
@@ -881,6 +894,7 @@ class llama_context_params(ctypes.Structure):
         ("offload_kqv", ctypes.c_bool),
         ("flash_attn", ctypes.c_bool),
         ("no_perf", ctypes.c_bool),
+        ("op_offload", ctypes.c_bool),
     ]
 
 
@@ -1193,7 +1207,20 @@ def llama_model_load_from_splits(
     ...
 
 
-# LLAMA_API void llama_free_model(struct llama_model * model);
+# LLAMA_API void llama_model_save_to_file(
+#         const struct llama_model * model,
+#                     const char * path_model);
+@ctypes_function(
+    "llama_model_save_to_file",
+    [llama_model_p_ctypes, ctypes.c_char_p],
+    None,
+)
+def llama_model_save_to_file(model: llama_model_p, path_model: bytes, /):
+    ...
+
+
+# DEPRECATED(LLAMA_API void llama_free_model(struct llama_model * model),
+#         "use llama_model_free instead");
 @ctypes_function(
     "llama_free_model",
     [llama_model_p_ctypes],
@@ -4128,8 +4155,8 @@ def llama_sampler_get_seed(smpl: llama_sampler_p, /) -> int:
     llama_token,
 )
 def llama_sampler_sample(
-    smpl: llama_sampler_p, ctx: llama_context_p, idx: int, /
-) -> int:
+    smpl: llama_sampler_p, ctx: llama_context_p, idx: ctypes.c_int32, /
+) -> ctypes.c_int32:
     ...
 
 
@@ -4306,3 +4333,85 @@ def llama_perf_sampler_reset(chain: llama_sampler_p, /):
     ...
 
 
+# //
+# // training
+# //
+
+# // function that returns whether or not a given tensor contains trainable parameters
+# typedef bool (*llama_opt_param_filter)(const struct ggml_tensor * tensor, void * userdata);
+llama_opt_param_filter = ctypes.CFUNCTYPE(
+    ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p
+)
+
+
+# // always returns true
+# LLAMA_API bool llama_opt_param_filter_all(const struct ggml_tensor * tensor, void * userdata);
+@ctypes_function("llama_opt_param_filter_all", [ctypes.c_void_p, ctypes.c_void_p], ctypes.c_bool)
+def llama_opt_param_filter_all(
+    tensor: llama_model_p,
+    userdata: ctypes.c_void_p, /
+) -> bool:
+    ...
+
+# struct llama_opt_params {
+#     uint32_t n_ctx_train; // assumed context size post training, use context size specified in llama_context if 0
+
+#     llama_opt_param_filter param_filter; // callback for determining which tensors contain trainable parameters
+#     void * param_filter_ud;              // userdata for determining which tensors contain trainable parameters
+
+#     ggml_opt_get_optimizer_params get_opt_pars; // callback for calculating optimizer parameters
+#     void * get_opt_pars_ud;                     // userdata for calculating optimizer parameters
+# };
+class llama_opt_params(ctypes.Structure):
+    _fields_ = [
+        ("n_ctx_train", ctypes.c_uint32),
+        ("param_filter", llama_opt_param_filter),
+        ("param_filter_ud", ctypes.c_void_p),
+        ("get_opt_pars", ggml_opt_get_optimizer_params),
+        ("get_opt_pars_ud", ctypes.c_void_p),
+    ]
+
+
+# LLAMA_API void llama_opt_init(struct llama_context * lctx, struct llama_model * model, struct llama_opt_params lopt_params);
+@ctypes_function(
+    "llama_opt_init",
+    [llama_context_p_ctypes, llama_model_p_ctypes, llama_opt_params_p_ctypes],
+    None,
+)
+def llama_opt_init(
+    lctx: llama_context_p,
+    model: llama_model_p,
+    lopt_params: llama_opt_params_p, /
+):
+    ...
+
+# LLAMA_API void llama_opt_epoch(
+#         struct llama_context    * lctx,
+#         ggml_opt_dataset_t        dataset,
+#         ggml_opt_result_t         result_train,
+#         ggml_opt_result_t         result_eval,
+#         int64_t                   idata_split,
+#         ggml_opt_epoch_callback   callback_train,
+#         ggml_opt_epoch_callback   callback_eval);
+@ctypes_function(
+    "llama_opt_epoch",[
+        llama_context_p_ctypes,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_int64,
+        ctypes.c_void_p,
+        ctypes.c_void_p
+    ],
+    None,
+)
+def llama_opt_epoch(
+    lctx: llama_context_p,
+    dataset: ctypes.c_void_p,
+    result_train: ctypes.c_void_p,
+    result_eval: ctypes.c_void_p,
+    idata_split: ctypes.c_int64,
+    callback_train: ctypes.c_void_p,
+    callback_eval: ctypes.c_void_p, /
+):
+    ...

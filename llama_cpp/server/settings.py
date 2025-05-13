@@ -95,6 +95,7 @@ class ModelSettings(BaseSettings):
     yarn_beta_fast: float = Field(default=32.0)
     yarn_beta_slow: float = Field(default=1.0)
     yarn_orig_ctx: int = Field(default=0)
+    defrag_thold: float = Field(default=-1.0)
     mul_mat_q: bool = Field(
         default=True, description="if true, use experimental mul_mat_q kernels"
     )
@@ -104,6 +105,9 @@ class ModelSettings(BaseSettings):
     )
     flash_attn: bool = Field(
         default=False, description="Whether to use flash attention."
+    )
+    op_offload: bool = Field(
+        default=True, description="Whether to offload host tensor operations to device"
     )
     # Sampling Params
     last_n_tokens_size: int = Field(

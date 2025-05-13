@@ -89,9 +89,11 @@ class Llama:
         yarn_beta_fast: float = 32.0,
         yarn_beta_slow: float = 1.0,
         yarn_orig_ctx: int = 0,
+        defrag_thold: float = -1.0,
         embedding: bool = False,
         offload_kqv: bool = True,
         flash_attn: bool = False,
+        op_offload: bool = True,
         # Sampling Params
         no_perf: bool = False,
         last_n_tokens_size: int = 64,
@@ -169,9 +171,11 @@ class Llama:
             yarn_beta_fast: YaRN low correction dim
             yarn_beta_slow: YaRN high correction dim
             yarn_orig_ctx: YaRN original context size
+            defrag_thold: Defragment the KV cache if holes/size > thold, <= 0 disabled (default)
             embedding: Embedding mode only.
             offload_kqv: Offload K, Q, V to GPU.
             flash_attn: Use flash attention.
+            op_offload: whether to offload host tensor operations to device
             no_perf: Measure performance timings.
             last_n_tokens_size: Maximum number of tokens to keep in the last_n_tokens deque.
             lora_base: Optional path to base model, useful if using a quantized base model and you want to apply LoRA to an f16 model.
@@ -339,9 +343,11 @@ class Llama:
             yarn_beta_slow if yarn_beta_slow != 0.0 else 0
         )
         self.context_params.yarn_orig_ctx = yarn_orig_ctx if yarn_orig_ctx != 0 else 0
+        self.context_params.defrag_thold = defrag_thold
         self.context_params.embeddings = embedding  # TODO: Rename to embeddings
         self.context_params.offload_kqv = offload_kqv
         self.context_params.flash_attn = flash_attn
+        self.context_params.op_offload = op_offload
         #  KV cache quantization
         if type_k is not None:
             self.context_params.type_k = type_k
@@ -561,7 +567,7 @@ class Llama:
     def eval_logits(self) -> Deque[List[float]]:
         return deque(
             self.scores[: self.n_tokens, :].tolist(),
-            maxlen=self._n_ctx
+            maxlen = 1
         )
 
     def tokenize(
@@ -2189,9 +2195,11 @@ class Llama:
             yarn_beta_fast=self.context_params.yarn_beta_fast,
             yarn_beta_slow=self.context_params.yarn_beta_slow,
             yarn_orig_ctx=self.context_params.yarn_orig_ctx,
+            defrag_thold=self.context_params.defrag_thold,
             embedding=self.context_params.embeddings,
             offload_kqv=self.context_params.offload_kqv,
             flash_attn=self.context_params.flash_attn,
+            op_offload=self.context_params.op_offload,
             # Sampling Params
             no_perf=self.context_params.no_perf,
             last_n_tokens_size=self.last_n_tokens_size,

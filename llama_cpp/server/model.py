@@ -260,10 +260,12 @@ class LlamaProxy:
             yarn_beta_fast=settings.yarn_beta_fast,
             yarn_beta_slow=settings.yarn_beta_slow,
             yarn_orig_ctx=settings.yarn_orig_ctx,
+            defrag_thold=settings.defrag_thold,
             mul_mat_q=settings.mul_mat_q,
             embedding=settings.embedding,
             offload_kqv=settings.offload_kqv,
             flash_attn=settings.flash_attn,
+            op_offload=settings.op_offload,
             # Sampling Params
             last_n_tokens_size=settings.last_n_tokens_size,
             # LoRA Params

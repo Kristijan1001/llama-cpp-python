@@ -66,7 +66,7 @@ class LlamaModel:
         def free_model():
             if self.model is None:
                 return
-            llama_cpp.llama_free_model(self.model)
+            llama_cpp.llama_model_free(self.model)
             self.model = None
 
         self._exit_stack.callback(free_model)

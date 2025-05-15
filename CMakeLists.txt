@@ -173,6 +173,5 @@ if (LLAMA_BUILD)
         endif()
 
         target_include_directories(llama-mtmd-cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/include)
-        target_include_directories(llama-llava-clip-quantize-cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/include)
     endif()
 endif()

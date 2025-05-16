@@ -522,6 +522,7 @@ class LlamaBatch:
             self.batch.pos[i] = n_past + i
             self.batch.seq_id[i][0] = 0
             self.batch.n_seq_id[i] = 1
+        self.batch.logits[n_tokens - 1] = True
 
     def add_sequence(self, batch: Sequence[int], seq_id: int):
         n_tokens = len(batch)
@@ -533,6 +534,7 @@ class LlamaBatch:
             self.batch.pos[j] = i
             self.batch.seq_id[j][0] = seq_id
             self.batch.n_seq_id[j] = 1
+        self.batch.logits[n_tokens - 1] = True
 
 
 class LlamaTokenDataArray:
@@ -983,7 +985,7 @@ class LlamaSampler:
         assert self.sampler is not None
         return llama_cpp.llama_sampler_get_seed(self.sampler)
 
-    def sample(self, ctx: LlamaContext, idx: int) -> int:
+    def sample(self, ctx: LlamaContext, idx: ctypes.c_int32) -> ctypes.c_int32:
         assert self.sampler is not None
         assert ctx.ctx is not None
         return llama_cpp.llama_sampler_sample(self.sampler, ctx.ctx, idx)

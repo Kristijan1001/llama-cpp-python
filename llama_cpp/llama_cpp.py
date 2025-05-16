@@ -2681,9 +2681,9 @@ def llama_batch_get_one(
     "llama_batch_init", [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32], llama_batch
 )
 def llama_batch_init(
-    n_tokens: Union[ctypes.c_int32, int],
-    embd: Union[ctypes.c_int32, int],
-    n_seq_max: Union[ctypes.c_int32, int],
+    n_tokens: ctypes.c_int32,
+    embd: ctypes.c_int32,
+    n_seq_max: ctypes.c_int32,
     /,
 ) -> llama_batch:
     """Allocates a batch of tokens on the heap that can hold a maximum of n_tokens
@@ -2872,10 +2872,10 @@ def llama_get_logits(ctx: llama_context_p, /) -> CtypesArray[ctypes.c_float]:
     ctypes.POINTER(ctypes.c_float),
 )
 def llama_get_logits_ith(
-    ctx: llama_context_p, i: Union[ctypes.c_int32, int], /
-) -> CtypesArray[ctypes.c_float]:
+    ctx: llama_context_p, i: ctypes.c_int32, /
+) -> ctypes.POINTER(ctypes.c_float):
     """Logits for the ith token. Equivalent to:
-    llama_get_logits(ctx) + i*n_vocab"""
+    llama_get_logits(ctx) + ctx->output_ids[i]*n_vocab"""
     ...
 
 

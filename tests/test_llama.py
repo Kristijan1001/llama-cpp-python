@@ -82,6 +82,7 @@ def test_real_model(llama_cpp_model_path):
     cparams.n_threads = multiprocessing.cpu_count()
     cparams.n_threads_batch = multiprocessing.cpu_count()
     cparams.flash_attn = True
+    cparams.swa_full = True
 
     context = internals.LlamaContext(model=model, params=cparams)
     tokens = model.tokenize(b"Hello, world!", add_bos=True, special=True)
@@ -122,6 +123,7 @@ def test_real_llama(llama_cpp_model_path):
         n_threads=multiprocessing.cpu_count(),
         n_threads_batch=multiprocessing.cpu_count(),
         flash_attn=True,
+        swa_full = True
     )
 
     output = model.create_completion(

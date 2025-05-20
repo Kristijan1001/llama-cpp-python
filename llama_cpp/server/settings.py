@@ -109,6 +109,9 @@ class ModelSettings(BaseSettings):
     op_offload: bool = Field(
         default=True, description="Whether to offload host tensor operations to device"
     )
+    swa_full: bool = Field(
+        default=True, description="Whether to use full-size SWA cache"
+    )
     # Sampling Params
     last_n_tokens_size: int = Field(
         default=64,

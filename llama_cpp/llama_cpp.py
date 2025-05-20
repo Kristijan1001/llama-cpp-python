@@ -797,10 +797,11 @@ class llama_model_params(ctypes.Structure):
 
 #     // Keep the booleans together and at the end of the struct to avoid misalignment during copy-by-value.
 #     bool embeddings;  // if true, extract embeddings (together with logits)
-#     bool offload_kqv; // whether to offload the KQV ops (including the KV cache) to GPU
-#     bool flash_attn;  // whether to use flash attention [EXPERIMENTAL]
-#     bool no_perf;     // whether to measure performance timings
-#     bool op_offload;  // whether to offload host tensor operations to device
+#     bool offload_kqv; // offload the KQV ops (including the KV cache) to GPU
+#     bool flash_attn;  // use flash attention [EXPERIMENTAL]
+#     bool no_perf;     // measure performance timings
+#     bool op_offload;  // offload host tensor operations to device
+#     bool swa_full;    // use full-size SWA cache (https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
 # };
 class llama_context_params(ctypes.Structure):
     """Parameters for llama_context
@@ -834,6 +835,7 @@ class llama_context_params(ctypes.Structure):
         flash_attn (bool): whether to use flash attention
         no_perf (bool): whether to measure performance timings
         op_offload(bool): whether to offload host tensor operations to device
+        swa_full(bool): whether to use full-size SWA cache
     """
 
     if TYPE_CHECKING:
@@ -865,6 +867,7 @@ class llama_context_params(ctypes.Structure):
         flash_attn: bool
         no_perf: bool
         op_offload:bool
+        swa_full:bool
 
     _fields_ = [
         ("n_ctx", ctypes.c_uint32),
@@ -895,6 +898,7 @@ class llama_context_params(ctypes.Structure):
         ("flash_attn", ctypes.c_bool),
         ("no_perf", ctypes.c_bool),
         ("op_offload", ctypes.c_bool),
+        ("swa_full", ctypes.c_bool),
     ]
 
 
@@ -2214,7 +2218,29 @@ def llama_kv_cache_seq_div(
     ...
 
 
+# // Returns the smallest position present in the KV cache for the specified sequence
+# // This is typically non-zero only for SWA caches
+# // Return -1 if the sequence is empty
+# LLAMA_API llama_pos llama_kv_self_seq_pos_min(
+#         struct llama_context * ctx,  llama_seq_id   seq_id);
+@ctypes_function(
+    "llama_kv_self_seq_pos_min",
+    [
+        llama_context_p_ctypes,
+        llama_seq_id,
+    ],
+    ctypes.c_int32,
+)
+def llama_kv_self_seq_pos_min(
+    ctx: llama_context_p,
+    seq_id: Union[llama_seq_id, int]
+    ,/) -> int:
+    """Returns the smallest position present in the KV cache for the specified sequence"""
+    ...
+
+
 # // Returns the largest position present in the KV cache for the specified sequence
+# // Return -1 if the sequence is empty
 # LLAMA_API llama_pos llama_kv_self_seq_pos_max(
 #         struct llama_context * ctx,  llama_seq_id   seq_id);
 @ctypes_function(
@@ -2726,18 +2752,23 @@ def llama_encode(ctx: llama_context_p, batch: llama_batch, /) -> int:
 # // Requires KV cache.
 # // For encode-decoder contexts, processes the batch using the decoder.
 # // Positive return values does not mean a fatal error, but rather a warning.
-# //   0 - success
-# //   1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
-# // < 0 - error. the KV cache state is restored to the state before this call
+# // Upon non-zero return values, the KV cache state is restored to the state before this call
+# //    0 - success
+# //    1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
+# //    2 - aborted
+# //   -1 - invalid input batch
+# // < -1 - error
 # LLAMA_API int32_t llama_decode(
 #         struct llama_context * ctx,
 #           struct llama_batch   batch);
 @ctypes_function("llama_decode", [llama_context_p_ctypes, llama_batch], ctypes.c_int32)
 def llama_decode(ctx: llama_context_p, batch: llama_batch, /) -> int:
     """Positive return values does not mean a fatal error, but rather a warning.
-    0 - success
-    1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
-    < 0 - error"""
+       0 - success
+       1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
+       2 - aborted
+      -1 - invalid input batch
+    < -1 - error"""
     ...
 
 

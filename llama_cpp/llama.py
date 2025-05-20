@@ -94,6 +94,7 @@ class Llama:
         offload_kqv: bool = True,
         flash_attn: bool = False,
         op_offload: bool = True,
+        swa_full: bool = True,
         # Sampling Params
         no_perf: bool = False,
         last_n_tokens_size: int = 64,
@@ -176,6 +177,7 @@ class Llama:
             offload_kqv: Offload K, Q, V to GPU.
             flash_attn: Use flash attention.
             op_offload: whether to offload host tensor operations to device
+            swa_full: whether to use full-size SWA cache
             no_perf: Measure performance timings.
             last_n_tokens_size: Maximum number of tokens to keep in the last_n_tokens deque.
             lora_base: Optional path to base model, useful if using a quantized base model and you want to apply LoRA to an f16 model.
@@ -348,6 +350,7 @@ class Llama:
         self.context_params.offload_kqv = offload_kqv
         self.context_params.flash_attn = flash_attn
         self.context_params.op_offload = op_offload
+        self.context_params.swa_full = swa_full
         #  KV cache quantization
         if type_k is not None:
             self.context_params.type_k = type_k
@@ -2200,6 +2203,7 @@ class Llama:
             offload_kqv=self.context_params.offload_kqv,
             flash_attn=self.context_params.flash_attn,
             op_offload=self.context_params.op_offload,
+            swa_full=self.context_params.swa_full,
             # Sampling Params
             no_perf=self.context_params.no_perf,
             last_n_tokens_size=self.last_n_tokens_size,

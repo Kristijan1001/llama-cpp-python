@@ -100,7 +100,7 @@ mtmd_input_chunks_p_ctypes = c_void_p
 # };
 class mtmd_input_text(Structure):
     _fields_ = [
-        ("text", POINTER(c_char_p)),
+        ("text", c_char_p),
         ("add_special", c_bool),
         ("parse_special", c_bool),
     ]
@@ -120,7 +120,7 @@ class mtmd_context_params(Structure):
         ("use_gpu", c_bool),
         ("print_timings", c_bool),
         ("n_threads", c_int),
-        ("verbosity", mtmd_input_chunk_type),
+        ("verbosity", c_int),
         ("image_marker", c_char_p),
         ("media_marker", c_char_p),
     ]
@@ -546,10 +546,12 @@ def mtmd_encode_chunk(
     ...
 
 # // get output embeddings from the last encode pass
+# // the reading size (in bytes) is equal to:
+# // llama_model_n_embd(model) * mtmd_input_chunk_get_n_tokens(chunk) * sizeof(float)
 # MTMD_API float * mtmd_get_output_embd(mtmd_context * ctx);
 @ctypes_function(
-    "mtmd_get_output_embd", [mtmd_context_p_ctypes], CtypesArray[c_float])
-def mtmd_get_output_embd(ctx: mtmd_context_p) -> CtypesArray[c_float]:
+    "mtmd_get_output_embd", [mtmd_context_p_ctypes], POINTER(c_float))
+def mtmd_get_output_embd(ctx: mtmd_context_p) -> POINTER(c_float):
     """
     get output embeddings from the last encode pass
     """

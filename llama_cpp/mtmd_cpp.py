@@ -36,15 +36,23 @@ if TYPE_CHECKING:
     )
 
 
-# Specify the base name of the shared library to load
+# --- mtmd library loading ---
 _libmtmd_base_name = "mtmd"
 _libmtmd_override_path = os.environ.get("MTMD_CPP_LIB")
-_libmtmd_base_path = pathlib.Path(os.path.abspath(os.path.dirname(__file__))) / "lib" if _libmtmd_override_path is None else pathlib.Path()
+_libmtmd_base_path = pathlib.Path(os.path.abspath(os.path.dirname(__file__))) / "lib" if _libmtmd_override_path is None else pathlib.Path(_libmtmd_override_path).parent
 
-# Load the library
+# Load the mtmd library
 _libmtmd = load_shared_library(_libmtmd_base_name, _libmtmd_base_path)
+ctypes_function_mtmd = ctypes_function_for_shared_library(_libmtmd)
 
-ctypes_function = ctypes_function_for_shared_library(_libmtmd)
+# --- mtmd_helper library loading ---
+_libmtmd_helper_base_name = "mtmd_helper"
+_libmtmd_helper_override_path = os.environ.get("MTMD_HELPER_CPP_LIB")
+_libmtmd_helper_base_path = pathlib.Path(os.path.abspath(os.path.dirname(__file__))) / "lib" if _libmtmd_helper_override_path is None else pathlib.Path(_libmtmd_helper_override_path).parent
+
+# Load the mtmd_helper library
+_libmtmd_helper = load_shared_library(_libmtmd_helper_base_name, _libmtmd_helper_base_path)
+ctypes_function_mtmd_helper = ctypes_function_for_shared_library(_libmtmd_helper)
 
 
 ################################################
@@ -129,7 +137,7 @@ mtmd_context_params_p = NewType("mtmd_context_params_p", int)
 mtmd_context_params_p_ctypes = POINTER(mtmd_context_params)
 
 # MTMD_API const char * mtmd_default_marker(void);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_default_marker",
     [],
     c_char_p,
@@ -139,7 +147,7 @@ def mtmd_default_marker() -> c_char_p:
 
 
 # MTMD_API struct mtmd_context_params mtmd_context_params_default(void);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_context_params_default",
     [],
     mtmd_context_params_p_ctypes,
@@ -153,7 +161,7 @@ def mtmd_context_params_default() -> mtmd_context_params_p:
 # MTMD_API mtmd_context * mtmd_init_from_file(const char * mmproj_fname,
 #                                             const struct llama_model * text_model,
 #                                             const struct mtmd_context_params ctx_params);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_init_from_file", [
         c_char_p,
         llama_cpp.llama_model_p_ctypes,
@@ -175,38 +183,45 @@ def mtmd_init_from_file(
 
 
 # MTMD_API void mtmd_free(mtmd_context * ctx);
-@ctypes_function("mtmd_free", [mtmd_context_p_ctypes], None)
+@ctypes_function_mtmd("mtmd_free", [mtmd_context_p_ctypes], None)
 def mtmd_free(ctx: mtmd_context_p):
     ...
 
 # // whether we need to set non-causal mask before llama_decode
 # MTMD_API bool mtmd_decode_use_non_causal(mtmd_context * ctx);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_decode_use_non_causal", [mtmd_context_p_ctypes], c_bool)
 def mtmd_decode_use_non_causal(ctx: mtmd_context_p) -> c_bool:
     ...
 
 # // whether the current model use M-RoPE for llama_decode
 # MTMD_API bool mtmd_decode_use_mrope(mtmd_context * ctx);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_decode_use_mrope", [mtmd_context_p_ctypes], c_bool)
 def mtmd_decode_use_mrope(ctx: mtmd_context_p) -> c_bool:
     ...
 
 # // whether the current model supports vision input
 # MTMD_API bool mtmd_support_vision(mtmd_context * ctx);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_support_vision", [mtmd_context_p_ctypes], c_bool)
 def mtmd_support_vision(ctx: mtmd_context_p) -> c_bool:
     ...
 
 # // whether the current model supports audio input
 # MTMD_API bool mtmd_support_audio(mtmd_context * ctx);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_support_audio", [mtmd_context_p_ctypes], c_bool)
 def mtmd_support_audio(ctx: mtmd_context_p) -> c_bool:
     ...
 
+# // get audio bitrate in Hz, for example 16000 for Whisper
+# // return -1 if audio is not supported
+# MTMD_API int mtmd_get_audio_bitrate(mtmd_context * ctx);
+@ctypes_function_mtmd(
+    "mtmd_get_audio_bitrate", [mtmd_context_p_ctypes], c_int)
+def mtmd_get_audio_bitrate(ctx: mtmd_context_p) -> c_int:
+    ...
 
 # // mtmd_bitmap
 # //
@@ -218,7 +233,7 @@ def mtmd_support_audio(ctx: mtmd_context_p) -> c_bool:
 # //     the data is in float format (PCM F32)
 
 # MTMD_API mtmd_bitmap *         mtmd_bitmap_init           (uint32_t nx, uint32_t ny, const unsigned char * data);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_bitmap_init", [
         c_uint32,
         c_uint32,
@@ -236,7 +251,7 @@ def mtmd_bitmap_init(
 
 
 # MTMD_API mtmd_bitmap *         mtmd_bitmap_init_from_audio(size_t n_samples,         const float         * data);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_bitmap_init_from_audio", [
         c_uint,
         POINTER(c_float)
@@ -252,39 +267,39 @@ def mtmd_bitmap_init_from_audio(
 
 
 # MTMD_API uint32_t              mtmd_bitmap_get_nx     (const mtmd_bitmap * bitmap);
-@ctypes_function("mtmd_bitmap_get_nx", [mtmd_bitmap_p_ctypes], c_uint32)
+@ctypes_function_mtmd("mtmd_bitmap_get_nx", [mtmd_bitmap_p_ctypes], c_uint32)
 def mtmd_bitmap_get_nx(bitmap: mtmd_bitmap_p) -> c_uint32:
     ...
 
 # MTMD_API uint32_t              mtmd_bitmap_get_ny     (const mtmd_bitmap * bitmap);
-@ctypes_function("mtmd_bitmap_get_ny", [mtmd_bitmap_p_ctypes], c_uint32)
+@ctypes_function_mtmd("mtmd_bitmap_get_ny", [mtmd_bitmap_p_ctypes], c_uint32)
 def mtmd_bitmap_get_ny(bitmap: mtmd_bitmap_p) -> c_uint32:
     ...
 
 # MTMD_API const unsigned char * mtmd_bitmap_get_data   (const mtmd_bitmap * bitmap);
-@ctypes_function("mtmd_bitmap_get_data", [mtmd_bitmap_p_ctypes], c_char_p)
+@ctypes_function_mtmd("mtmd_bitmap_get_data", [mtmd_bitmap_p_ctypes], c_char_p)
 def mtmd_bitmap_get_data(bitmap: mtmd_bitmap_p) -> c_char_p:
     ...
 
 # MTMD_API size_t                mtmd_bitmap_get_n_bytes(const mtmd_bitmap * bitmap);
-@ctypes_function("mtmd_bitmap_get_n_bytes", [mtmd_bitmap_p_ctypes], c_uint)
+@ctypes_function_mtmd("mtmd_bitmap_get_n_bytes", [mtmd_bitmap_p_ctypes], c_uint)
 def mtmd_bitmap_get_n_bytes(bitmap: mtmd_bitmap_p) -> c_uint:
     ...
 
 # MTMD_API bool                  mtmd_bitmap_is_audio   (const mtmd_bitmap * bitmap);
-@ctypes_function("mtmd_bitmap_is_audio", [mtmd_bitmap_p_ctypes], c_bool)
+@ctypes_function_mtmd("mtmd_bitmap_is_audio", [mtmd_bitmap_p_ctypes], c_bool)
 def mtmd_bitmap_is_audio(bitmap: mtmd_bitmap_p) -> c_bool:
     ...
 
 # MTMD_API void                  mtmd_bitmap_free       (mtmd_bitmap * bitmap);
-@ctypes_function("mtmd_bitmap_free", [mtmd_bitmap_p_ctypes], None)
+@ctypes_function_mtmd("mtmd_bitmap_free", [mtmd_bitmap_p_ctypes], None)
 def mtmd_bitmap_free(bitmap: mtmd_bitmap_p):
     ...
 
 # // bitmap ID is optional, but useful for KV cache tracking
 # // these getters/setters are dedicated functions, so you can for example calculate the hash of the image based on mtmd_bitmap_get_data()
 # MTMD_API const char * mtmd_bitmap_get_id(const mtmd_bitmap * bitmap);
-@ctypes_function("mtmd_bitmap_get_id", [mtmd_bitmap_p_ctypes], c_char_p)
+@ctypes_function_mtmd("mtmd_bitmap_get_id", [mtmd_bitmap_p_ctypes], c_char_p)
 def mtmd_bitmap_get_id(bitmap: mtmd_bitmap_p) -> c_char_p:
     """
     bitmap ID is optional, but useful for KV cache tracking
@@ -294,7 +309,7 @@ def mtmd_bitmap_get_id(bitmap: mtmd_bitmap_p) -> c_char_p:
 
 
 # MTMD_API void         mtmd_bitmap_set_id(mtmd_bitmap * bitmap, const char * id);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_bitmap_set_id", [
         mtmd_bitmap_p_ctypes,
         c_char_p,
@@ -312,7 +327,7 @@ def mtmd_bitmap_set_id(
 # // this is simply a list of mtmd_input_chunk
 # // the elements can only be populated via mtmd_tokenize()
 # MTMD_API mtmd_input_chunks *      mtmd_input_chunks_init(void);
-@ctypes_function("mtmd_input_chunks_init", [], mtmd_input_chunks_p_ctypes)
+@ctypes_function_mtmd("mtmd_input_chunks_init", [], mtmd_input_chunks_p_ctypes)
 def mtmd_input_chunks_init() -> mtmd_input_chunks_p:
     """
     this is simply a list of mtmd_input_chunk
@@ -322,13 +337,13 @@ def mtmd_input_chunks_init() -> mtmd_input_chunks_p:
 
 
 # MTMD_API size_t                   mtmd_input_chunks_size(const mtmd_input_chunks * chunks);
-@ctypes_function("mtmd_input_chunks_size", [mtmd_input_chunks_p_ctypes], c_uint)
+@ctypes_function_mtmd("mtmd_input_chunks_size", [mtmd_input_chunks_p_ctypes], c_uint)
 def mtmd_input_chunks_size(chunks: mtmd_input_chunks_p) -> c_uint:
     ...
 
 
 # MTMD_API const mtmd_input_chunk * mtmd_input_chunks_get (const mtmd_input_chunks * chunks, size_t idx);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_input_chunks_get", [
         mtmd_input_chunks_p_ctypes,
         c_int32,
@@ -342,7 +357,7 @@ def mtmd_input_chunks_get(
 
 
 # MTMD_API void                     mtmd_input_chunks_free(mtmd_input_chunks * chunks);
-@ctypes_function("mtmd_input_chunks_free", [mtmd_input_chunks_p_ctypes], None)
+@ctypes_function_mtmd("mtmd_input_chunks_free", [mtmd_input_chunks_p_ctypes], None)
 def mtmd_input_chunks_free(chunks: mtmd_input_chunks_p):
     ...
 
@@ -352,7 +367,7 @@ def mtmd_input_chunks_free(chunks: mtmd_input_chunks_p):
 # // the instance will be constructed via mtmd_tokenize()
 # // it will be freed along with mtmd_input_chunks
 # MTMD_API enum mtmd_input_chunk_type mtmd_input_chunk_get_type        (const mtmd_input_chunk * chunk);
-@ctypes_function("mtmd_input_chunk_get_type", [mtmd_input_chunk_p_ctypes], c_int32)
+@ctypes_function_mtmd("mtmd_input_chunk_get_type", [mtmd_input_chunk_p_ctypes], c_int32)
 def mtmd_input_chunk_get_type(chunk: mtmd_input_chunk_p) -> c_int32:
     """
     the instance will be constructed via mtmd_tokenize()
@@ -361,7 +376,7 @@ def mtmd_input_chunk_get_type(chunk: mtmd_input_chunk_p) -> c_int32:
     ...
 
 # MTMD_API const llama_token *        mtmd_input_chunk_get_tokens_text (const mtmd_input_chunk * chunk, size_t * n_tokens_output);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_input_chunk_get_tokens_text", [
         mtmd_input_chunk_p_ctypes,
         POINTER(c_uint),
@@ -374,18 +389,18 @@ def mtmd_input_chunk_get_tokens_text(
     ...
 
 # MTMD_API const mtmd_image_tokens *  mtmd_input_chunk_get_tokens_image(const mtmd_input_chunk * chunk);
-@ctypes_function("mtmd_input_chunk_get_tokens_image", [mtmd_input_chunk_p_ctypes], mtmd_image_tokens_p_ctypes)
+@ctypes_function_mtmd("mtmd_input_chunk_get_tokens_image", [mtmd_input_chunk_p_ctypes], mtmd_image_tokens_p_ctypes)
 def mtmd_input_chunk_get_tokens_image(chunk: mtmd_input_chunk_p) -> mtmd_image_tokens_p:
     ...
 
 # MTMD_API size_t                     mtmd_input_chunk_get_n_tokens    (const mtmd_input_chunk * chunk);
-@ctypes_function("mtmd_input_chunk_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_uint)
+@ctypes_function_mtmd("mtmd_input_chunk_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_uint)
 def mtmd_input_chunk_get_n_tokens(chunk: mtmd_input_chunk_p) -> c_uint:
     ...
 
 # // returns nullptr for ID on text chunk
 # MTMD_API const char *               mtmd_input_chunk_get_id          (const mtmd_input_chunk * chunk);
-@ctypes_function("mtmd_input_chunk_get_id", [mtmd_input_chunk_p_ctypes], c_char_p)
+@ctypes_function_mtmd("mtmd_input_chunk_get_id", [mtmd_input_chunk_p_ctypes], c_char_p)
 def mtmd_input_chunk_get_id(chunk: mtmd_input_chunk_p) -> c_char_p:
     """
     returns nullptr for ID on text chunk
@@ -394,7 +409,7 @@ def mtmd_input_chunk_get_id(chunk: mtmd_input_chunk_p) -> c_char_p:
 
 # // number of temporal positions (always 1 for M-RoPE, n_tokens otherwise)
 # MTMD_API llama_pos                  mtmd_input_chunk_get_n_pos       (const mtmd_input_chunk * chunk);
-@ctypes_function("mtmd_input_chunk_get_n_pos", [mtmd_input_chunk_p_ctypes], c_int32)
+@ctypes_function_mtmd("mtmd_input_chunk_get_n_pos", [mtmd_input_chunk_p_ctypes], c_int32)
 def mtmd_input_chunk_get_n_pos(chunk: mtmd_input_chunk_p) -> c_int32:
     """
     number of temporal positions (always 1 for M-RoPE, n_tokens otherwise)
@@ -405,7 +420,7 @@ def mtmd_input_chunk_get_n_pos(chunk: mtmd_input_chunk_p) -> c_int32:
 # // you can move the chunk ownership to your own code by copying it
 # // remember to free the chunk when you are done with it
 # MTMD_API mtmd_input_chunk * mtmd_input_chunk_copy(const mtmd_input_chunk * chunk);
-@ctypes_function("mtmd_input_chunk_copy", [mtmd_input_chunk_p_ctypes], mtmd_input_chunk_p_ctypes)
+@ctypes_function_mtmd("mtmd_input_chunk_copy", [mtmd_input_chunk_p_ctypes], mtmd_input_chunk_p_ctypes)
 def mtmd_input_chunk_copy(chunk: mtmd_input_chunk_p) -> mtmd_input_chunk_p:
     """
     in case you want to use custom logic to handle the chunk (i.e. KV cache management)
@@ -415,7 +430,7 @@ def mtmd_input_chunk_copy(chunk: mtmd_input_chunk_p) -> mtmd_input_chunk_p:
     ...
 
 # MTMD_API void               mtmd_input_chunk_free(mtmd_input_chunk * chunk);
-@ctypes_function("mtmd_input_chunk_free", [mtmd_input_chunk_p_ctypes], None)
+@ctypes_function_mtmd("mtmd_input_chunk_free", [mtmd_input_chunk_p_ctypes], None)
 def mtmd_input_chunk_free(chunk: mtmd_input_chunk_p):
     """
     remember to free the chunk when you are done with it
@@ -428,32 +443,32 @@ def mtmd_input_chunk_free(chunk: mtmd_input_chunk_p):
 # // the instance will be constructed via mtmd_tokenize()
 # // it will be freed along with mtmd_input_chunk
 # MTMD_API size_t       mtmd_image_tokens_get_n_tokens(const mtmd_image_tokens * image_tokens); // TODO: deprecate
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_image_tokens_get_n_tokens", [mtmd_image_tokens_p_ctypes], c_uint)
 def mtmd_image_tokens_get_n_tokens(image_tokens: mtmd_image_tokens_p) -> c_uint:
     ...
 
 # MTMD_API size_t       mtmd_image_tokens_get_nx      (const mtmd_image_tokens * image_tokens);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_image_tokens_get_nx", [mtmd_image_tokens_p_ctypes], c_uint)
 def mtmd_image_tokens_get_nx(image_tokens: mtmd_image_tokens_p) -> c_uint:
     ...
 
 # MTMD_API size_t       mtmd_image_tokens_get_ny      (const mtmd_image_tokens * image_tokens);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_image_tokens_get_ny", [mtmd_image_tokens_p_ctypes], c_uint)
 def mtmd_image_tokens_get_ny(image_tokens: mtmd_image_tokens_p) -> c_uint:
     ...
 
 # MTMD_API const char * mtmd_image_tokens_get_id      (const mtmd_image_tokens * image_tokens); // TODO: deprecate
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_image_tokens_get_id", [mtmd_image_tokens_p_ctypes], c_char_p)
 def mtmd_image_tokens_get_id(image_tokens: mtmd_image_tokens_p) -> c_char_p:
     ...
 
 # // number of temporal positions (always 1 for M-RoPE, n_tokens otherwise)
 # MTMD_API llama_pos    mtmd_image_tokens_get_n_pos   (const mtmd_image_tokens * image_tokens); // TODO: deprecate
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_image_tokens_get_n_pos", [mtmd_image_tokens_p_ctypes], c_int32)
 def mtmd_image_tokens_get_n_pos(image_tokens: mtmd_image_tokens_p) -> c_int32:
     ...
@@ -479,7 +494,7 @@ def mtmd_image_tokens_get_n_pos(image_tokens: mtmd_image_tokens_p) -> c_int32:
 #                                const mtmd_input_text * text,
 #                                const mtmd_bitmap ** bitmaps,
 #                                size_t n_bitmaps);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_tokenize", [
         mtmd_context_p_ctypes,
         mtmd_input_chunks_p_ctypes,
@@ -513,7 +528,7 @@ def mtmd_tokenize(
 # // TODO: deprecate
 # MTMD_API int32_t mtmd_encode(mtmd_context * ctx,
 #                              const mtmd_image_tokens * image_tokens);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_encode", [
         mtmd_context_p_ctypes,
         mtmd_image_tokens_p_ctypes
@@ -531,7 +546,7 @@ def mtmd_encode(
 # // returns 0 on success
 # MTMD_API int32_t mtmd_encode_chunk(mtmd_context * ctx,
 #                                    const mtmd_input_chunk * chunk);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_encode_chunk", [
         mtmd_context_p_ctypes,
         mtmd_input_chunk_p_ctypes
@@ -549,7 +564,7 @@ def mtmd_encode_chunk(
 # // the reading size (in bytes) is equal to:
 # // llama_model_n_embd(model) * mtmd_input_chunk_get_n_tokens(chunk) * sizeof(float)
 # MTMD_API float * mtmd_get_output_embd(mtmd_context * ctx);
-@ctypes_function(
+@ctypes_function_mtmd(
     "mtmd_get_output_embd", [mtmd_context_p_ctypes], POINTER(c_float))
 def mtmd_get_output_embd(ctx: mtmd_context_p) -> POINTER(c_float):
     """
@@ -558,21 +573,34 @@ def mtmd_get_output_embd(ctx: mtmd_context_p) -> POINTER(c_float):
     ...
 
 
+# // test function, to be used in test-mtmd-c-api.c
+# MTMD_API mtmd_input_chunks * mtmd_test_create_input_chunks(void);
+@ctypes_function_mtmd(
+    "mtmd_test_create_input_chunks",
+    [],
+    mtmd_input_chunk_p_ctypes,
+)
+def mtmd_test_create_input_chunks() -> mtmd_input_chunk_p:
+    ...
+
+
 # //
-# // Helper functions (can be implemented based on other functions)
+# // libmtmd helper functions
 # //
 # // Please note that these helpers are not guaranteed to be stable.
 # // BREAKING CHANGES are expected.
 # //
 
+
 # // helper function to construct a mtmd_bitmap from a file
 # // it calls mtmd_helper_bitmap_init_from_buf() internally
 # // returns nullptr on failure
 # // this function is thread-safe
-# MTMD_API mtmd_bitmap * mtmd_helper_bitmap_init_from_file(const char * fname);
-@ctypes_function(
-    "mtmd_helper_bitmap_init_from_file", [c_char_p], mtmd_bitmap_p_ctypes)
-def mtmd_helper_bitmap_init_from_file(fname: c_char_p) -> mtmd_bitmap_p:
+# MTMD_API mtmd_bitmap * mtmd_helper_bitmap_init_from_file(mtmd_context * ctx, const char * fname);
+
+@ctypes_function_mtmd_helper(
+    "mtmd_helper_bitmap_init_from_file", [mtmd_context_p_ctypes, c_char_p], mtmd_bitmap_p_ctypes)
+def mtmd_helper_bitmap_init_from_file(ctx: mtmd_context_p, fname: c_char_p) -> mtmd_bitmap_p:
     """
     helper function to construct a mtmd_bitmap from a file
     it calls mtmd_helper_bitmap_init_from_buf() internally
@@ -588,10 +616,11 @@ def mtmd_helper_bitmap_init_from_file(fname: c_char_p) -> mtmd_bitmap_p:
 # // note: audio files will be auto-detected based on magic bytes
 # // returns nullptr on failure
 # // this function is thread-safe
-# MTMD_API mtmd_bitmap * mtmd_helper_bitmap_init_from_buf(const unsigned char * buf, size_t len);
-@ctypes_function(
-    "mtmd_helper_bitmap_init_from_buf", [c_char_p, c_uint], mtmd_bitmap_p_ctypes)
+# MTMD_API mtmd_bitmap * mtmd_helper_bitmap_init_from_buf(mtmd_context * ctx, const unsigned char * buf, size_t len);
+@ctypes_function_mtmd_helper(
+    "mtmd_helper_bitmap_init_from_buf", [mtmd_context_p_ctypes, c_char_p, c_uint], mtmd_bitmap_p_ctypes)
 def mtmd_helper_bitmap_init_from_buf(
+    ctx: mtmd_context_p,
     buf: c_char_p,
     len: c_uint,
     /,
@@ -609,7 +638,7 @@ def mtmd_helper_bitmap_init_from_buf(
 
 # // helper to count the total number of tokens from a list of chunks, useful to keep track of KV cache
 # MTMD_API size_t mtmd_helper_get_n_tokens(const mtmd_input_chunks * chunks);
-@ctypes_function(
+@ctypes_function_mtmd_helper(
     "mtmd_helper_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_uint)
 def mtmd_helper_get_n_tokens(chunks: mtmd_input_chunk_p) -> c_uint:
     """
@@ -621,7 +650,7 @@ def mtmd_helper_get_n_tokens(chunks: mtmd_input_chunk_p) -> c_uint:
 # // helper to count the total position of tokens from a list of chunks, useful to keep track of n_past
 # // normally, n_pos is equal to n_tokens, but for M-RoPE it is different
 # MTMD_API llama_pos mtmd_helper_get_n_pos(const mtmd_input_chunks * chunks);
-@ctypes_function(
+@ctypes_function_mtmd_helper(
     "mtmd_helper_get_n_pos", [mtmd_input_chunk_p_ctypes], c_int32)
 def mtmd_helper_get_n_pos(chunks: mtmd_input_chunk_p) -> c_int32:
     """
@@ -645,7 +674,7 @@ def mtmd_helper_get_n_pos(chunks: mtmd_input_chunk_p) -> c_int32:
 #                                          int32_t n_batch,
 #                                          bool logits_last,
 #                                          llama_pos * new_n_past);
-@ctypes_function(
+@ctypes_function_mtmd_helper(
     "mtmd_helper_eval_chunks", [
         mtmd_context_p_ctypes,
         llama_cpp.llama_context_p_ctypes,
@@ -688,7 +717,7 @@ def mtmd_helper_eval_chunks(
 #                                                int32_t n_batch,
 #                                                bool logits_last,
 #                                                llama_pos * new_n_past);
-@ctypes_function(
+@ctypes_function_mtmd_helper(
     "mtmd_helper_eval_chunk_single", [
         mtmd_context_p_ctypes,
         llama_cpp.llama_context_p_ctypes,
@@ -728,7 +757,7 @@ def mtmd_helper_eval_chunk_single(
 #                                                 llama_seq_id seq_id,
 #                                                 int32_t n_batch,
 #                                                 llama_pos * new_n_past);
-@ctypes_function(
+@ctypes_function_mtmd_helper(
     "mtmd_helper_decode_image_chunk", [
         mtmd_context_p_ctypes,
         llama_cpp.llama_context_p_ctypes,
@@ -756,15 +785,4 @@ def mtmd_helper_decode_image_chunk(
     this helper will handle batching and pre/post decoding setup (for ex. gemma 3 requires non-causal attention)
     ret 0 on success, -1 on chunk not being a valid image chunk, 1 on decode failure
     """
-    ...
-
-
-# // test function, to be used in test-mtmd-c-api.c
-# MTMD_API mtmd_input_chunks * mtmd_test_create_input_chunks(void);
-@ctypes_function(
-    "mtmd_test_create_input_chunks",
-    [],
-    mtmd_input_chunk_p_ctypes,
-)
-def mtmd_test_create_input_chunks() -> mtmd_input_chunk_p:
     ...

@@ -4,6 +4,7 @@ project(llama_cpp)
 
 option(LLAMA_BUILD "Build llama.cpp shared library and install alongside python package" ON)
 option(MTMD_BUILD "Build mtmd shared library and install alongside python package" ON)
+option(MTMD_HELPER_BUILD "Build mtmd_helper shared library and install alongside python package" ON)
 
 function(llama_cpp_python_install_target target)
     if(NOT TARGET ${target})
@@ -136,45 +137,39 @@ if (LLAMA_BUILD)
         )
     endif()
 
-    if (MTMD_BUILD)
+    if (MTMD_BUILD OR MTMD_HELPER_BUILD)
+        add_subdirectory(vendor/llama.cpp/tools/mtmd)
+
         if (LLAMA_CUBLAS OR LLAMA_CUDA)
             add_compile_definitions(GGML_USE_CUBLAS)
             add_compile_definitions(GGML_USE_CUDA)
         endif()
-
         if (LLAMA_METAL)
             add_compile_definitions(GGML_USE_METAL)
         endif()
 
-        # Building mtmd
-        add_subdirectory(vendor/llama.cpp/tools/mtmd)
-        set_target_properties(mtmd_shared PROPERTIES OUTPUT_NAME "mtmd")
-
-        if (WIN32)
-            set_target_properties(mtmd_shared PROPERTIES CUDA_ARCHITECTURES OFF)
-        endif()
-        llama_cpp_python_install_target(mtmd_shared)
-        if (WIN32)
-            install(
-                FILES $<TARGET_RUNTIME_DLLS:mtmd_shared>
-                DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/llama_cpp/lib
-            )
-            install(
-                FILES $<TARGET_RUNTIME_DLLS:mtmd_shared>
-                DESTINATION ${SKBUILD_PLATLIB_DIR}/llama_cpp/lib
-            )
+        if (MTMD_BUILD)
+            set_target_properties(mtmd_shared PROPERTIES OUTPUT_NAME "mtmd")
+            if (WIN32)
+                set_target_properties(mtmd_shared PROPERTIES CUDA_ARCHITECTURES OFF)
+            endif()
+            llama_cpp_python_install_target(mtmd_shared)
+            if (WIN32)
+                install(FILES $<TARGET_RUNTIME_DLLS:mtmd_shared> DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/llama_cpp/lib)
+                install(FILES $<TARGET_RUNTIME_DLLS:mtmd_shared> DESTINATION ${SKBUILD_PLATLIB_DIR}/llama_cpp/lib)
+            endif()
         endif()
 
-        # Fix for mtmd build: Add include directory for llama.h
-        # Move these commands after the add_subdirectory call
-        target_include_directories(mtmd PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/include)
-        target_include_directories(mtmd PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/ggml/include)
-
-        if (BUILD_SHARED_LIBS)
-            target_include_directories(mtmd_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/include)
-            target_include_directories(mtmd_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/ggml/include)
+        if (MTMD_HELPER_BUILD)
+            set_target_properties(mtmd_helper_shared PROPERTIES OUTPUT_NAME "mtmd_helper")
+            if (WIN32)
+                set_target_properties(mtmd_helper_shared PROPERTIES CUDA_ARCHITECTURES OFF)
+            endif()
+            llama_cpp_python_install_target(mtmd_helper_shared)
+            if (WIN32)
+                install(FILES $<TARGET_RUNTIME_DLLS:mtmd_helper_shared> DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/llama_cpp/lib)
+                install(FILES $<TARGET_RUNTIME_DLLS:mtmd_helper_shared> DESTINATION ${SKBUILD_PLATLIB_DIR}/llama_cpp/lib)
+            endif()
         endif()
-
-        target_include_directories(llama-mtmd-cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/include)
-    endif()
+    endif() # End of if (MTMD_BUILD OR MTMD_HELPER_BUILD)
 endif()

@@ -45,15 +45,6 @@ _libmtmd_base_path = pathlib.Path(os.path.abspath(os.path.dirname(__file__))) / 
 _libmtmd = load_shared_library(_libmtmd_base_name, _libmtmd_base_path)
 ctypes_function_mtmd = ctypes_function_for_shared_library(_libmtmd)
 
-# --- mtmd_helper library loading ---
-_libmtmd_helper_base_name = "mtmd_helper"
-_libmtmd_helper_override_path = os.environ.get("MTMD_HELPER_CPP_LIB")
-_libmtmd_helper_base_path = pathlib.Path(os.path.abspath(os.path.dirname(__file__))) / "lib" if _libmtmd_helper_override_path is None else pathlib.Path(_libmtmd_helper_override_path).parent
-
-# Load the mtmd_helper library
-_libmtmd_helper = load_shared_library(_libmtmd_helper_base_name, _libmtmd_helper_base_path)
-ctypes_function_mtmd_helper = ctypes_function_for_shared_library(_libmtmd_helper)
-
 
 ################################################
 # mtmd.h
@@ -598,7 +589,7 @@ def mtmd_test_create_input_chunks() -> mtmd_input_chunk_p:
 # // this function is thread-safe
 # MTMD_API mtmd_bitmap * mtmd_helper_bitmap_init_from_file(mtmd_context * ctx, const char * fname);
 
-@ctypes_function_mtmd_helper(
+@ctypes_function_mtmd(
     "mtmd_helper_bitmap_init_from_file", [mtmd_context_p_ctypes, c_char_p], mtmd_bitmap_p_ctypes)
 def mtmd_helper_bitmap_init_from_file(ctx: mtmd_context_p, fname: c_char_p) -> mtmd_bitmap_p:
     """
@@ -617,7 +608,7 @@ def mtmd_helper_bitmap_init_from_file(ctx: mtmd_context_p, fname: c_char_p) -> m
 # // returns nullptr on failure
 # // this function is thread-safe
 # MTMD_API mtmd_bitmap * mtmd_helper_bitmap_init_from_buf(mtmd_context * ctx, const unsigned char * buf, size_t len);
-@ctypes_function_mtmd_helper(
+@ctypes_function_mtmd(
     "mtmd_helper_bitmap_init_from_buf", [mtmd_context_p_ctypes, c_char_p, c_uint], mtmd_bitmap_p_ctypes)
 def mtmd_helper_bitmap_init_from_buf(
     ctx: mtmd_context_p,
@@ -638,7 +629,7 @@ def mtmd_helper_bitmap_init_from_buf(
 
 # // helper to count the total number of tokens from a list of chunks, useful to keep track of KV cache
 # MTMD_API size_t mtmd_helper_get_n_tokens(const mtmd_input_chunks * chunks);
-@ctypes_function_mtmd_helper(
+@ctypes_function_mtmd(
     "mtmd_helper_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_uint)
 def mtmd_helper_get_n_tokens(chunks: mtmd_input_chunk_p) -> c_uint:
     """
@@ -650,7 +641,7 @@ def mtmd_helper_get_n_tokens(chunks: mtmd_input_chunk_p) -> c_uint:
 # // helper to count the total position of tokens from a list of chunks, useful to keep track of n_past
 # // normally, n_pos is equal to n_tokens, but for M-RoPE it is different
 # MTMD_API llama_pos mtmd_helper_get_n_pos(const mtmd_input_chunks * chunks);
-@ctypes_function_mtmd_helper(
+@ctypes_function_mtmd(
     "mtmd_helper_get_n_pos", [mtmd_input_chunk_p_ctypes], c_int32)
 def mtmd_helper_get_n_pos(chunks: mtmd_input_chunk_p) -> c_int32:
     """
@@ -674,7 +665,7 @@ def mtmd_helper_get_n_pos(chunks: mtmd_input_chunk_p) -> c_int32:
 #                                          int32_t n_batch,
 #                                          bool logits_last,
 #                                          llama_pos * new_n_past);
-@ctypes_function_mtmd_helper(
+@ctypes_function_mtmd(
     "mtmd_helper_eval_chunks", [
         mtmd_context_p_ctypes,
         llama_cpp.llama_context_p_ctypes,
@@ -717,7 +708,7 @@ def mtmd_helper_eval_chunks(
 #                                                int32_t n_batch,
 #                                                bool logits_last,
 #                                                llama_pos * new_n_past);
-@ctypes_function_mtmd_helper(
+@ctypes_function_mtmd(
     "mtmd_helper_eval_chunk_single", [
         mtmd_context_p_ctypes,
         llama_cpp.llama_context_p_ctypes,
@@ -757,7 +748,7 @@ def mtmd_helper_eval_chunk_single(
 #                                                 llama_seq_id seq_id,
 #                                                 int32_t n_batch,
 #                                                 llama_pos * new_n_past);
-@ctypes_function_mtmd_helper(
+@ctypes_function_mtmd(
     "mtmd_helper_decode_image_chunk", [
         mtmd_context_p_ctypes,
         llama_cpp.llama_context_p_ctypes,

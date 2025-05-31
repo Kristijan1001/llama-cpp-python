@@ -567,9 +567,9 @@ llama_progress_callback = ctypes.CFUNCTYPE(
 #     llama_token  *  token;
 #     float        *  embd;
 #     llama_pos    *  pos;
-#     int32_t      *  n_seq_id;
-#     llama_seq_id ** seq_id;
-#     int8_t       *  logits; // TODO: rename this to "output"
+#     int32_t      *  n_seq_id; // TODO: remove, should belong to only 1 sequence
+#     llama_seq_id ** seq_id;   // TODO: become llama_seq_id * seq_id;
+#     int8_t       *  logits;   // TODO: rename this to "output"
 # } llama_batch;
 class llama_batch(ctypes.Structure):
     """Input data for llama_decode
@@ -1980,6 +1980,7 @@ def llama_kv_self_seq_div(
 
 # // Returns the smallest position present in the KV cache for the specified sequence
 # // This is typically non-zero only for SWA caches
+# // Note that all positions in the range [pos_min, pos_max] are guaranteed to be present in the KV cache
 # // Return -1 if the sequence is empty
 # LLAMA_API llama_pos llama_kv_self_seq_pos_min(
 #         struct llama_context * ctx,  llama_seq_id   seq_id);
@@ -2000,6 +2001,7 @@ def llama_kv_self_seq_pos_min(
 
 
 # // Returns the largest position present in the KV cache for the specified sequence
+# // Note that all positions in the range [pos_min, pos_max] are guaranteed to be present in the KV cache
 # // Return -1 if the sequence is empty
 # LLAMA_API llama_pos llama_kv_self_seq_pos_max(
 #         struct llama_context * ctx,  llama_seq_id   seq_id);
@@ -2023,6 +2025,7 @@ def llama_kv_self_seq_pos_max(
 # // This will be applied:
 # //   - lazily on next llama_decode()
 # //   - explicitly with llama_kv_self_update()
+# // TODO: deprecate and always update the cache lazily [TAG: API_KV_NO_DEFRAG]
 # LLAMA_API void llama_kv_self_defrag(struct llama_context * ctx);
 @ctypes_function("llama_kv_self_defrag", [llama_context_p_ctypes], None)
 def llama_kv_self_defrag(ctx: llama_context_p, /):
@@ -2042,6 +2045,7 @@ def llama_kv_self_can_shift(ctx: llama_context_p, /) -> bool:
 
 
 # // Apply the KV cache updates (such as K-shifts, defragmentation, etc.)
+# // TODO: deprecate and always update the cache lazily [TAG: API_KV_NO_DEFRAG]
 # LLAMA_API void llama_kv_self_update(struct llama_context * ctx);
 @ctypes_function("llama_kv_self_update", [llama_context_p_ctypes], None)
 def llama_kv_self_update(ctx: llama_context_p, /):

@@ -802,6 +802,8 @@ class llama_model_params(ctypes.Structure):
 #     bool no_perf;     // measure performance timings
 #     bool op_offload;  // offload host tensor operations to device
 #     bool swa_full;    // use full-size SWA cache (https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
+#                       // NOTE: setting to false when n_seq_max > 1 can cause bad performance in some casesAdd commentMore actions
+#                       //       ref: https://github.com/ggml-org/llama.cpp/pull/13845#issuecomment-2924800573
 # };
 class llama_context_params(ctypes.Structure):
     """Parameters for llama_context
@@ -1439,6 +1441,12 @@ def llama_model_n_head(model: llama_model_p, /) -> int:
     ...
 
 
+ # LLAMA_API int32_t llama_model_n_swa      (const struct llama_model * model);
+@ctypes_function("llama_model_n_swa", [llama_model_p_ctypes], ctypes.c_int32)
+def llama_model_n_swa(model: llama_model_p, /) -> int:
+    ...
+
+
 # LLAMA_API int32_t llama_model_n_head_kv  (const struct llama_model * model);
 @ctypes_function("llama_model_n_head_kv", [llama_model_p_ctypes], ctypes.c_int32)
 def llama_model_n_head_kv(model: llama_model_p, /) -> int:
@@ -1905,7 +1913,6 @@ def llama_kv_self_seq_keep(ctx: llama_context_p, seq_id: Union[llama_seq_id, int
 # // Adds relative position "delta" to all tokens that belong to the specified sequence and have positions in [p0, p1)
 # // If the KV cache is RoPEd, the KV data is updated accordingly:
 # //   - lazily on next llama_decode()
-# //   - explicitly with llama_kv_self_update()
 # // p0 < 0 : [0,  p1]
 # // p1 < 0 : [p0, inf)
 # LLAMA_API void llama_kv_self_seq_add(
@@ -1936,7 +1943,6 @@ def llama_kv_self_seq_add(
     """Adds relative position "delta" to all tokens that belong to the specified sequence and have positions in [p0, p1)
     If the KV cache is RoPEd, the KV data is updated accordingly:
     - lazily on next llama_decode()
-    - explicitly with llama_kv_self_update()
     p0 < 0 : [0,  p1]
     p1 < 0 : [p0, inf)"""
     ...
@@ -2024,15 +2030,12 @@ def llama_kv_self_seq_pos_max(
 # // Defragment the KV cache
 # // This will be applied:
 # //   - lazily on next llama_decode()
-# //   - explicitly with llama_kv_self_update()
-# // TODO: deprecate and always update the cache lazily [TAG: API_KV_NO_DEFRAG]
-# LLAMA_API void llama_kv_self_defrag(struct llama_context * ctx);
+# LLAMA_API DEPRECATED(void llama_kv_self_defrag(struct llama_context * ctx),
+#         "simply remove this call, the context will automatically decide when to do a defragmentation based on 'defrag_thold'");
 @ctypes_function("llama_kv_self_defrag", [llama_context_p_ctypes], None)
 def llama_kv_self_defrag(ctx: llama_context_p, /):
-    """Defragment the KV cache
-    This will be applied:
-    - lazily on next llama_decode()
-    - explicitly with llama_kv_cache_update()"""
+    """simply remove this call, the context will automatically decide when to do a defragmentation based on 'defrag_thold'
+    """
     ...
 
 
@@ -2045,11 +2048,11 @@ def llama_kv_self_can_shift(ctx: llama_context_p, /) -> bool:
 
 
 # // Apply the KV cache updates (such as K-shifts, defragmentation, etc.)
-# // TODO: deprecate and always update the cache lazily [TAG: API_KV_NO_DEFRAG]
-# LLAMA_API void llama_kv_self_update(struct llama_context * ctx);
+# LLAMA_API DEPRECATED(void llama_kv_self_update(struct llama_context * ctx),Add commentMore actions
+#             "simply remove this call, updates are applied lazily on the next llama_decode()");
 @ctypes_function("llama_kv_self_update", [llama_context_p_ctypes], None)
 def llama_kv_self_update(ctx: llama_context_p, /):
-    """Apply the KV cache updates (such as K-shifts, defragmentation, etc.)"""
+    """simply remove this call, updates are applied lazily on the next llama_decode()"""
     ...
 
 

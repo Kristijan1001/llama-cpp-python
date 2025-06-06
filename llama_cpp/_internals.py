@@ -279,38 +279,34 @@ class LlamaContext:
     def pooling_type(self) -> int:
         return llama_cpp.llama_pooling_type(self.ctx)
 
-    def kv_self_clear(self):
-        llama_cpp.llama_kv_self_clear(self.ctx)
+    # // Memory API
 
-    def kv_self_seq_rm(self, seq_id: int, p0: int, p1: int) -> bool:
-        return llama_cpp.llama_kv_self_seq_rm(self.ctx, seq_id, p0, p1)
+    def get_memory(self):
+        return llama_cpp.llama_get_memory(self.ctx)
 
-    def kv_self_seq_cp(self, seq_id_src: int, seq_id_dst: int, p0: int, p1: int):
-        llama_cpp.llama_kv_self_seq_cp(self.ctx, seq_id_src, seq_id_dst, p0, p1)
+    def memory_clear(self, data: bool):
+        llama_cpp.llama_memory_clear(self.get_memory(), data)
 
-    def kv_self_seq_keep(self, seq_id: int):
-        llama_cpp.llama_kv_self_seq_keep(self.ctx, seq_id)
+    def memory_seq_rm(self, seq_id: int, p0: int, p1: int) -> bool:
+        return llama_cpp.llama_memory_seq_rm(self.get_memory(), seq_id, p0, p1)
 
-    def kv_self_seq_add(self, seq_id: int, p0: int, p1: int, delta: int):
-        llama_cpp.llama_kv_self_seq_add(self.ctx, seq_id, p0, p1, delta)
+    def memory_seq_cp(self, seq_id_src: int, seq_id_dst: int, p0: int, p1: int):
+        llama_cpp.llama_memory_seq_cp(self.get_memory(), seq_id_src, seq_id_dst, p0, p1)
 
-    def kv_self_seq_div(self, seq_id: int, p0: int, p1: int, d: int):
-        llama_cpp.llama_kv_self_seq_div(self.ctx, seq_id, p0, p1, d)
+    def memory_seq_keep(self, seq_id: int):
+        llama_cpp.llama_memory_seq_keep(self.get_memory(), seq_id)
 
-    def kv_self_seq_pos_max(self, seq_id: int) -> int:
-        return llama_cpp.llama_kv_self_seq_pos_max(self.ctx, seq_id)
+    def memory_seq_add(self, seq_id: int, p0: int, p1: int, delta: int):
+        llama_cpp.llama_memory_seq_add(self.get_memory(), seq_id, p0, p1, delta)
 
-    def kv_self_seq_pos_min(self, seq_id: int) -> int:
-        return llama_cpp.llama_kv_self_seq_pos_min(self.ctx, seq_id)
+    def memory_seq_div(self, seq_id: int, p0: int, p1: int, d: int):
+        llama_cpp.llama_memory_seq_div(self.get_memory(), seq_id, p0, p1, d)
 
-    def kv_self_defrag(self):
-        llama_cpp.llama_kv_self_defrag(self.ctx)
+    def memory_seq_pos_max(self, seq_id: int) -> int:
+        return llama_cpp.llama_memory_seq_pos_max(self.get_memory(), seq_id)
 
-    def kv_self_can_shift(self) -> bool:
-        llama_cpp.llama_kv_self_can_shift(self.ctx)
-
-    def kv_self_update(self):
-        llama_cpp.llama_kv_self_update(self.ctx)
+    def memory_seq_pos_min(self, seq_id: int) -> int:
+        return llama_cpp.llama_memory_seq_pos_min(self.get_memory(), seq_id)
 
     def get_state_size(self) -> int:
         return llama_cpp.llama_state_get_size(self.ctx)

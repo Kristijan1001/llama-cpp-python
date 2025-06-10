@@ -123,7 +123,7 @@ jobs:
           $currentDate = Get-Date -UFormat "%Y%m%d"
           Write-Output "BUILD_DATE=$currentDate" >> $env:GITHUB_ENV
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2.2.2
         with:
           files: dist/*
           # Set tag_name to <tag>-cu<cuda_version>-<date>-win

@@ -552,18 +552,22 @@ llama_progress_callback = ctypes.CFUNCTYPE(
 )
 
 
-# // Input data for llama_decode
+# // Input data for llama_encode/llama_decode
 # // A llama_batch object can contain input about one or many sequences
 # // The provided arrays (i.e. token, embd, pos, etc.) must have size of n_tokens
 # //
 # // - token  : the token ids of the input (used when embd is NULL)
 # // - embd   : token embeddings (i.e. float vector of size n_embd) (used when token is NULL)
 # // - pos    : the positions of the respective token in the sequence
-# //            (if set to NULL, the token position will be tracked automatically by llama_decode)
+# //            (if set to NULL, the token position will be tracked automatically by llama_encode/llama_decode)
 # // - seq_id : the sequence to which the respective token belongs
 # //            (if set to NULL, the sequence ID will be assumed to be 0)
 # // - logits : if zero, the logits (and/or the embeddings) for the respective token will not be output
-# //            (if set to NULL, only the logits for last token will be returned)
+# // - logits : if zero, the logits (and/or the embeddings) for the respective token will not be output
+# //            (if set to NULL:
+# //               - if embeddings: all tokens are output
+# //               - if not:        only the last token is output
+# //            )
 # //
 # typedef struct llama_batch {
 #     int32_t n_tokens;
@@ -571,8 +575,8 @@ llama_progress_callback = ctypes.CFUNCTYPE(
 #     llama_token  *  token;
 #     float        *  embd;
 #     llama_pos    *  pos;
-#     int32_t      *  n_seq_id; // TODO: remove, should belong to only 1 sequence
-#     llama_seq_id ** seq_id;   // TODO: become llama_seq_id * seq_id;
+#     int32_t      *  n_seq_id;
+#     llama_seq_id ** seq_id;
 #     int8_t       *  logits;   // TODO: rename this to "output"
 # } llama_batch;
 class llama_batch(ctypes.Structure):
@@ -2532,12 +2536,12 @@ def llama_n_threads_batch(ctx: llama_context_p, /) -> int:
 
 
 # // Set whether the model is in embeddings mode or not
-# // If true, embeddings will be returned but logits will not
 # LLAMA_API void llama_set_embeddings(struct llama_context * ctx, bool embeddings);
 @ctypes_function("llama_set_embeddings", [llama_context_p_ctypes, ctypes.c_bool], None)
 def llama_set_embeddings(ctx: llama_context_p, embeddings: bool, /):
-    """Set whether the model is in embeddings model or not
-    If true, embeddings will be returned but logits will not"""
+    """
+    Set whether the model is in embeddings model or not
+    """
     ...
 
 

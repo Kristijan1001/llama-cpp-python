@@ -2536,6 +2536,7 @@ def llama_n_threads_batch(ctx: llama_context_p, /) -> int:
 
 
 # // Set whether the model is in embeddings mode or not
+# // TODO: rename to avoid confusion with llama_get_embeddings()
 # LLAMA_API void llama_set_embeddings(struct llama_context * ctx, bool embeddings);
 @ctypes_function("llama_set_embeddings", [llama_context_p_ctypes, ctypes.c_bool], None)
 def llama_set_embeddings(ctx: llama_context_p, embeddings: bool, /):

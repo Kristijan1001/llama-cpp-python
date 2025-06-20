@@ -2807,6 +2807,16 @@ def llama_vocab_get_add_eos(vocab: llama_vocab_p, /) -> bool:
     ...
 
 
+# LLAMA_API bool llama_vocab_get_add_sep(const struct llama_vocab * vocab);
+@ctypes_function(
+    "llama_vocab_get_add_sep",
+    [llama_vocab_p_ctypes],
+    ctypes.c_bool,
+)
+def llama_vocab_get_add_sep(vocab: llama_vocab_p, /) -> bool:
+    ...
+
+
 # LLAMA_API llama_token llama_vocab_fim_pre(const struct llama_vocab * vocab);
 @ctypes_function(
     "llama_vocab_fim_pre",

@@ -1189,29 +1189,29 @@ class Llama:
 
         completion_id: str = f"cmpl-{str(uuid.uuid4())}"
         created: int = int(time.time())
-        bos_token_id: int = self.token_bos()
-        cls_token_id: int = self._model.token_cls()
+        bos_token_id: int = self._model.token_bos()
+        eos_token_id: int = self._model.token_eos()
         sep_token_id: int = self._model.token_sep()
-        prefix_token_id: int = 0 # self._model.token_prefix() # TODO: Fix
-        middle_token_id: int = 0 # self._model.token_middle() # TODO: Fix
-        suffix_token_id: int = 0 # self._model.token_suffix() # TODO: Fix
+        prefix_token_id: int = self._model.token_fim_pre()
+        middle_token_id: int = self._model.token_fim_mid()
+        suffix_token_id: int = self._model.token_fim_suf()
         add_space_prefix: bool = (
             self.metadata.get("tokenizer.ggml.add_space_prefix", "true") == "true"
         )
-        bos_tokens: List[int] = [cls_token_id if cls_token_id != -1 else bos_token_id]
+        bos_tokens: List[int] = [bos_token_id]
         eos_tokens: List[int] = [
-            sep_token_id if sep_token_id != -1 else self.token_eos()
+            sep_token_id if self._model.get_add_sep() else eos_token_id
         ]
 
         if (
             (isinstance(prompt, list) and suffix is None)
-            or not self._model.add_bos_token()
+            or not self._model.get_add_bos()
             or bos_tokens[:1] == [-1]
         ):
             bos_tokens = []
 
         if (isinstance(prompt, list) and suffix is None) or (
-            not self._model.add_eos_token() and sep_token_id == -1
+            not self._model.get_add_eos() and not self._model.get_add_sep()
         ):
             eos_tokens = []
 
@@ -2294,17 +2294,29 @@ class Llama:
         """Return the llama tokenizer for this model."""
         return LlamaTokenizer(self)
 
-    def token_eos(self) -> int:
-        """Return the end-of-sequence token."""
-        return self._model.token_eos()
-
     def token_bos(self) -> int:
         """Return the beginning-of-sequence token."""
         return self._model.token_bos()
 
+    def token_eos(self) -> int:
+        """Return the end-of-sequence token."""
+        return self._model.token_eos()
+
+    def token_eot(self) -> int:
+        """Return the end-of-turn token."""
+        return self._model.token_eot()
+
+    def token_sep(self) -> int:
+        """Return the sentence-separator token."""
+        return self._model.token_sep()
+
     def token_nl(self) -> int:
-        """Return the newline token."""
+        """Return the next-line token."""
         return self._model.token_nl()
+
+    def token_pad(self) -> int:
+        """Return the padding token."""
+        return self._model.token_pad()
 
     def pooling_type(self) -> str:
         """Return the pooling type."""

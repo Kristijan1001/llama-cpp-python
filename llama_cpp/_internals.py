@@ -112,48 +112,69 @@ class LlamaModel:
     # Vocab
 
     def token_get_text(self, token: int) -> str:
-        return llama_cpp.llama_token_get_text(self.vocab, token).decode("utf-8")
+        return llama_cpp.llama_vocab_get_text(self.vocab, token).decode("utf-8")
 
     def token_get_score(self, token: int) -> float:
-        return llama_cpp.llama_token_get_score(self.vocab, token)
+        return llama_cpp.llama_vocab_get_score(self.vocab, token)
 
     def token_get_attr(self, token: int) -> int:
-        return llama_cpp.llama_token_get_attr(self.vocab, token)
+        return llama_cpp.llama_vocab_get_attr(self.vocab, token)
+
+    def token_is_eog(self, token: int) -> bool:
+        return llama_cpp.llama_vocab_is_eog(self.vocab, token)
+
+    def token_is_control(self, token: int) -> bool:
+        return llama_cpp.llama_vocab_is_control(self.vocab, token)
 
     # Special tokens
 
     def token_bos(self) -> int:
-        return llama_cpp.llama_token_bos(self.vocab)
+        return llama_cpp.llama_vocab_bos(self.vocab)
 
     def token_eos(self) -> int:
-        return llama_cpp.llama_token_eos(self.vocab)
-
-    def token_cls(self) -> int:
-        return llama_cpp.llama_token_cls(self.vocab)
-
-    def token_sep(self) -> int:
-        return llama_cpp.llama_token_sep(self.vocab)
-
-    def token_nl(self) -> int:
-        return llama_cpp.llama_token_nl(self.vocab)
-
-    def token_prefix(self) -> int:
-        raise NotImplementedError("token_prefix is not implemented in llama.cpp")
-
-    def token_middle(self) -> int:
-        raise NotImplementedError("token_middle is not implemented in llama.cpp")
-
-    def token_suffix(self) -> int:
-        raise NotImplementedError("token_suffix is not implemented in llama.cpp")
+        return llama_cpp.llama_vocab_eos(self.vocab)
 
     def token_eot(self) -> int:
-        return llama_cpp.llama_token_eot(self.vocab)
+        return llama_cpp.llama_vocab_eot(self.vocab)
 
-    def add_bos_token(self) -> bool:
-        return llama_cpp.llama_add_bos_token(self.vocab)
+    def token_sep(self) -> int:
+        return llama_cpp.llama_vocab_sep(self.vocab)
 
-    def add_eos_token(self) -> bool:
-        return llama_cpp.llama_add_eos_token(self.vocab)
+    def token_nl(self) -> int:
+        return llama_cpp.llama_vocab_nl(self.vocab)
+
+    def token_pad(self) -> int:
+        return llama_cpp.llama_vocab_pad(self.vocab)
+
+    def token_cls(self) -> int:
+        return llama_cpp.llama_vocab_cls(self.vocab)
+
+    def token_fim_pre(self) -> int:
+        return llama_cpp.llama_vocab_fim_pre(self.vocab)
+
+    def token_fim_suf(self) -> int:
+        return llama_cpp.llama_vocab_fim_suf(self.vocab)
+
+    def token_fim_mid(self) -> int:
+        return llama_cpp.llama_vocab_fim_mid(self.vocab)
+
+    def token_fim_pad(self) -> int:
+        return llama_cpp.llama_vocab_fim_pad(self.vocab)
+
+    def token_fim_rep(self) -> int:
+        return llama_cpp.llama_vocab_fim_rep(self.vocab)
+
+    def token_fim_sep(self) -> int:
+        return llama_cpp.llama_vocab_fim_sep(self.vocab)
+
+    def get_add_bos(self) -> bool:
+        return llama_cpp.llama_vocab_get_add_bos(self.vocab)
+
+    def get_add_eos(self) -> bool:
+        return llama_cpp.llama_vocab_get_add_eos(self.vocab)
+
+    def get_add_sep(self) -> bool:
+        return llama_cpp.llama_vocab_get_add_sep(self.vocab)
 
     # Tokenization
 

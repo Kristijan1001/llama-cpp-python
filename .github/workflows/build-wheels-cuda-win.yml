@@ -51,9 +51,8 @@ jobs:
     steps:
       - name: Add MSBuild to PATH
         if: runner.os == 'Windows'
-        uses: microsoft/setup-msbuild@main
+        uses: microsoft/setup-msbuild@v2
         with:
-          vs-version: '[17.12,17.14)'
           msbuild-architecture: x64
 
       - uses: actions/checkout@v4

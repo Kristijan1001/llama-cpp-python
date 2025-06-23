@@ -942,6 +942,7 @@ It might not exist for progress report where '.' is output repeatedly."""
 #     void * imatrix;                      // pointer to importance matrix data
 #     void * kv_overrides;                 // pointer to vector containing overrides
 #     void * tensor_types;                 // pointer to vector containing tensor types
+#     void * prune_layers;                 // pointer to vector containing layer indices to prune
 # } llama_model_quantize_params;
 class llama_model_quantize_params(ctypes.Structure):
     """Parameters for llama_model_quantize
@@ -959,6 +960,7 @@ class llama_model_quantize_params(ctypes.Structure):
         imatrix (ctypes.c_void_p): pointer to importance matrix data
         kv_overrides (ctypes.c_void_p): pointer to vector containing overrides
         tensor_types (ctypes.c_void_p): pointer to vector containing tensor types
+        prune_layers (ctypes.c_void_p): pointer to vector containing layer indices to prune
     """
 
     if TYPE_CHECKING:
@@ -974,6 +976,7 @@ class llama_model_quantize_params(ctypes.Structure):
         imatrix: ctypes.c_void_p
         kv_overrides: ctypes.c_void_p
         tensor_types: ctypes.c_void_p
+        prune_layers: ctypes.c_void_p
 
     _fields_ = [
         ("nthread", ctypes.c_int32),
@@ -988,6 +991,7 @@ class llama_model_quantize_params(ctypes.Structure):
         ("imatrix", ctypes.c_void_p),
         ("kv_overrides", ctypes.c_void_p),
         ("tensor_types", ctypes.c_void_p),
+        ("prune_layers", ctypes.c_void_p),
     ]
 
 
@@ -2473,23 +2477,26 @@ def llama_encode(ctx: llama_context_p, batch: llama_batch, /) -> int:
 # // Requires the context to have a memory.
 # // For encode-decoder contexts, processes the batch using the decoder.
 # // Positive return values does not mean a fatal error, but rather a warning.
-# // Upon non-zero return values, the memory state is restored to the state before this call
+# // Upon fatal-error or abort, the ubatches that managed to be been processed will remain in the memory state of the context
+# //   To handle this correctly, query the memory state using llama_memory_seq_pos_min() and llama_memory_seq_pos_max()
+# // Upon other return values, the memory state is restored to the state before this call
 # //    0 - success
 # //    1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
-# //    2 - aborted
+# //    2 - aborted     (processed ubatches will remain in the context's memory)
 # //   -1 - invalid input batch
-# // < -1 - error
+# // < -1 - fatal error (processed ubatches will remain in the context's memory)
 # LLAMA_API int32_t llama_decode(
 #         struct llama_context * ctx,
-#           struct llama_batch   batch);
+#             struct llama_batch   batch);
 @ctypes_function("llama_decode", [llama_context_p_ctypes, llama_batch], ctypes.c_int32)
 def llama_decode(ctx: llama_context_p, batch: llama_batch, /) -> int:
     """Positive return values does not mean a fatal error, but rather a warning.
        0 - success
        1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
-       2 - aborted
+       2 - aborted     (processed ubatches will remain in the context's memory)
       -1 - invalid input batch
-    < -1 - error"""
+    < -1 - fatal error (processed ubatches will remain in the context's memory)
+    """
     ...
 
 
@@ -3096,6 +3103,7 @@ def llama_vocab_cls(vocab: llama_vocab_p, /) -> llama_token:
 # /// @param tokens The tokens pointer must be large enough to hold the resulting tokens.
 # /// @return Returns the number of tokens on success, no more than n_tokens_max
 # /// @return Returns a negative number on failure - the number of tokens that would have been returned
+# /// @return Returns INT32_MIN on overflow (e.g., tokenization result size exceeds int32_t limit)
 # /// @param add_special Allow to add BOS and EOS tokens if model is configured to do so.
 # /// @param parse_special Allow tokenizing special and/or control tokens which otherwise are not exposed and treated
 # ///                      as plaintext. Does not insert a leading space.

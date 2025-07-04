@@ -66,7 +66,6 @@ class Llama:
         split_mode: int = llama_cpp.LLAMA_SPLIT_MODE_LAYER,
         main_gpu: int = 0,
         tensor_split: Optional[List[float]] = None,
-        rpc_servers: Optional[str] = None,
         vocab_only: bool = False,
         use_mmap: bool = True,
         use_mlock: bool = False,
@@ -90,11 +89,12 @@ class Llama:
         yarn_beta_slow: float = 1.0,
         yarn_orig_ctx: int = 0,
         defrag_thold: float = -1.0,
+        logits_all: bool = False,
         embedding: bool = False,
         offload_kqv: bool = True,
         flash_attn: bool = False,
-        op_offload: bool = True,
-        swa_full: bool = True,
+        op_offload: Optional[bool] = None,
+        swa_full: Optional[bool] = None,
         # Sampling Params
         no_perf: bool = False,
         last_n_tokens_size: int = 64,
@@ -152,7 +152,6 @@ class Llama:
             split_mode: How to split the model across GPUs. See llama_cpp.LLAMA_SPLIT_* for options.
             main_gpu: main_gpu interpretation depends on split_mode: LLAMA_SPLIT_MODE_NONE: the GPU that is used for the entire model. LLAMA_SPLIT_MODE_ROW: the GPU that is used for small tensors and intermediate results. LLAMA_SPLIT_MODE_LAYER: ignored
             tensor_split: How split tensors should be distributed across GPUs. If None, the model is not split.
-            rpc_servers: Comma separated list of RPC servers to use for offloading
             vocab_only: Only load the vocabulary no weights.
             use_mmap: Use mmap if possible.
             use_mlock: Force the system to keep the model in RAM.
@@ -173,6 +172,7 @@ class Llama:
             yarn_beta_slow: YaRN high correction dim
             yarn_orig_ctx: YaRN original context size
             defrag_thold: Defragment the KV cache if holes/size > thold, <= 0 disabled (default)
+            logits_all: Return logits for all tokens, not just the last token. Must be True for completion to return logprobs.
             embedding: Embedding mode only.
             offload_kqv: Offload K, Q, V to GPU.
             flash_attn: Use flash attention.
@@ -230,11 +230,6 @@ class Llama:
         )  # 0x7FFFFFFF is INT32 max, will be auto set to all layers
         self.model_params.split_mode = split_mode
         self.model_params.main_gpu = main_gpu
-        if rpc_servers is not None:
-            self.model_params.rpc_servers = rpc_servers.encode("utf-8")
-            self._rpc_servers = rpc_servers
-        else:
-            self._rpc_servers = None
         self.tensor_split = tensor_split
         self._c_tensor_split = None
         if self.tensor_split is not None:
@@ -346,11 +341,17 @@ class Llama:
         )
         self.context_params.yarn_orig_ctx = yarn_orig_ctx if yarn_orig_ctx != 0 else 0
         self.context_params.defrag_thold = defrag_thold
+        self._logits_all = logits_all if draft_model is None else True
         self.context_params.embeddings = embedding  # TODO: Rename to embeddings
         self.context_params.offload_kqv = offload_kqv
         self.context_params.flash_attn = flash_attn
-        self.context_params.op_offload = op_offload
-        self.context_params.swa_full = swa_full
+
+        if op_offload is not None:
+            self.context_params.op_offload = op_offload
+
+        if swa_full is not None:
+            self.context_params.swa_full = swa_full
+
         #  KV cache quantization
         if type_k is not None:
             self.context_params.type_k = type_k
@@ -570,7 +571,7 @@ class Llama:
     def eval_logits(self) -> Deque[List[float]]:
         return deque(
             self.scores[: self.n_tokens, :].tolist(),
-            maxlen = 1
+            maxlen=self._n_ctx if self._logits_all else 1,
         )
 
     def tokenize(
@@ -643,12 +644,28 @@ class Llama:
             n_past = self.n_tokens
             n_tokens = len(batch)
             self._batch.set_batch(
-                batch=batch, n_past=n_past
+                batch=batch, n_past=n_past, logits_all=self._logits_all
             )
             self._ctx.decode(self._batch)
             # Save tokens
             self.input_ids[n_past : n_past + n_tokens] = batch
-
+            # Save logits
+            if self._logits_all:
+                rows = n_tokens
+                cols = self._n_vocab
+                logits = np.ctypeslib.as_array(
+                    self._ctx.get_logits(), shape=(rows * cols,)
+                )
+                self.scores[n_past : n_past + n_tokens, :].reshape(-1)[::] = logits
+            else:
+                # rows = 1
+                # cols = self._n_vocab
+                # logits = np.ctypeslib.as_array(
+                #     self._ctx.get_logits(), shape=(rows * cols,)
+                # )
+                # self.scores[n_past + n_tokens - 1, :].reshape(-1)[::] = logits
+                # NOTE: Now that sampling is done inside the sampler, logits are only needed for logprobs which requires logits_all
+                pass
             # Update n_tokens
             self.n_tokens += n_tokens
 
@@ -1325,9 +1342,9 @@ class Llama:
         else:
             stop_sequences = []
 
-        if logprobs is not None:
+        if logprobs is not None and self._logits_all is False:
             raise ValueError(
-                "logprobs is not supported for models"
+                "logprobs is not supported for models created with logits_all=False"
             )
 
         if self.cache:
@@ -2199,6 +2216,7 @@ class Llama:
             yarn_beta_slow=self.context_params.yarn_beta_slow,
             yarn_orig_ctx=self.context_params.yarn_orig_ctx,
             defrag_thold=self.context_params.defrag_thold,
+            logits_all=self._logits_all,
             embedding=self.context_params.embeddings,
             offload_kqv=self.context_params.offload_kqv,
             flash_attn=self.context_params.flash_attn,

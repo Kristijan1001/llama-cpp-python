@@ -537,7 +537,7 @@ class LlamaBatch:
     def reset(self):
         self.batch.n_tokens = 0
 
-    def set_batch(self, batch: Sequence[int], n_past: int):
+    def set_batch(self, batch: Sequence[int], n_past: int, logits_all: bool):
         n_tokens = len(batch)
         self.batch.n_tokens = n_tokens
         for i in range(n_tokens):
@@ -545,9 +545,10 @@ class LlamaBatch:
             self.batch.pos[i] = n_past + i
             self.batch.seq_id[i][0] = 0
             self.batch.n_seq_id[i] = 1
+            self.batch.logits[i] = logits_all
         self.batch.logits[n_tokens - 1] = True
 
-    def add_sequence(self, batch: Sequence[int], seq_id: int):
+    def add_sequence(self, batch: Sequence[int], seq_id: int, logits_all: bool):
         n_tokens = len(batch)
         n_tokens0 = self.batch.n_tokens
         self.batch.n_tokens += n_tokens
@@ -557,6 +558,7 @@ class LlamaBatch:
             self.batch.pos[j] = i
             self.batch.seq_id[j][0] = seq_id
             self.batch.n_seq_id[j] = 1
+            self.batch.logits[j] = logits_all
         self.batch.logits[n_tokens - 1] = True
 
 

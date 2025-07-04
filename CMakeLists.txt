@@ -97,6 +97,13 @@ if (LLAMA_BUILD)
     endif()
 
     add_subdirectory(vendor/llama.cpp)
+
+    if (WIN32)
+        if (TARGET llama)
+            set_target_properties(llama PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        endif()
+    endif()
+
     llama_cpp_python_install_target(llama)
     llama_cpp_python_install_target(ggml)
 

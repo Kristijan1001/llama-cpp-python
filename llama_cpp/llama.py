@@ -1086,7 +1086,7 @@ class Llama:
         data: Union[List[List[float]], List[List[List[float]]]] = []
 
         def decode_batch(seq_sizes: List[int]):
-            llama_cpp.llama_kv_cache_clear(self._ctx.ctx)
+            llama_cpp.llama_memory_clear(llama_cpp.llama_get_memory(self._ctx.ctx), True)
             self._ctx.decode(self._batch)
             self._batch.reset()
 
@@ -1157,7 +1157,7 @@ class Llama:
 
         output = data[0] if isinstance(input, str) else data
 
-        llama_cpp.llama_kv_cache_clear(self._ctx.ctx)
+        llama_cpp.llama_memory_clear(llama_cpp.llama_get_memory(self._ctx.ctx), True)
         self.reset()
 
         if return_count:

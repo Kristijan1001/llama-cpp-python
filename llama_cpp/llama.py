@@ -1065,6 +1065,7 @@ class Llama:
 
         # get pooling information
         pooling_type = self.pooling_type()
+        logits_all = pooling_type == llama_cpp.LLAMA_POOLING_TYPE_NONE
 
         if self.context_params.embeddings is False:
             raise RuntimeError(
@@ -1142,7 +1143,7 @@ class Llama:
                 p_batch = 0
 
             # add to batch
-            self._batch.add_sequence(tokens, p_batch)
+            self._batch.add_sequence(tokens, p_batch, logits_all)
 
             # update batch stats
             s_batch.append(n_tokens)

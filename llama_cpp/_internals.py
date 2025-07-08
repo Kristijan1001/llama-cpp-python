@@ -791,7 +791,7 @@ class CustomSampler:
         self.sampler = llama_cpp.llama_sampler_init(ctypes.pointer(sampler_i), None)
 
     def get_sampler(self) -> llama_cpp.llama_sampler_p:
-        return ctypes.pointer(self.sampler)
+        return self.sampler
 
 
 class LlamaSampler:
@@ -998,7 +998,7 @@ class LlamaSampler:
         self._add_sampler(sampler)
         # NOTE: Must remove custom samplers before free or llama.cpp will try to free them
         self.custom_samplers.append(
-            (llama_cpp.llama_sampler_chain_n(self.sampler) - 1, custom_sampler)
+            [llama_cpp.llama_sampler_chain_n(self.sampler) - 1, custom_sampler]
         )
 
     def _add_sampler(self, sampler: llama_cpp.llama_sampler_p):

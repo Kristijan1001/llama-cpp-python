@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.12]
+
+- feat: Update llama.cpp to [ggml-org/llama.cpp@b8eeb8741d4483daf576498cf90537b4de71633c](https://github.com/ggml-org/llama.cpp/commit/b8eeb8741d4483daf576498cf90537b4de71633c)
+
 ## [0.3.11]
 
 - fix: Update reference to `llama_kv_cache_clear` in Llama.embed. Closes #2037 by @abetlen in 9e5a4eaa84156084ed7bbb91e6efcc91dc6217bc

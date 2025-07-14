@@ -11,6 +11,11 @@ import pytest
 import llama_cpp
 import llama_cpp._internals as internals
 
+from typing import (
+    List,
+    Dict,
+)
+
 
 MODEL = "./vendor/llama.cpp/models/ggml-vocab-llama-spm.gguf"
 
@@ -81,7 +86,6 @@ def test_real_model(llama_cpp_model_path):
     cparams.n_ubatch = 16
     cparams.n_threads = multiprocessing.cpu_count()
     cparams.n_threads_batch = multiprocessing.cpu_count()
-    cparams.logits_all = False
     cparams.flash_attn = True
     cparams.swa_full = True
 
@@ -153,15 +157,13 @@ root ::= "true" | "false"
     assert output["choices"][0]["text"] == "true"
 
     suffix = b"rot"
-    tokens = model.tokenize(suffix, add_bos=True, special=True)
-    def logit_processor_func(input_ids, logits):
-        for token in tokens:
-            logits[token] *= 1000
-        return logits
 
-    logit_processors = llama_cpp.LogitsProcessorList(
-        [logit_processor_func]
-    )
+    tokens = model.tokenize(suffix, add_bos=True, special=True)
+
+    logit_bias: Dict[int, float] = {}
+
+    for token_id in tokens:
+        logit_bias[token_id] = 1000
 
     output = model.create_completion(
         "The capital of france is par",
@@ -170,8 +172,9 @@ root ::= "true" | "false"
         top_p=0.9,
         temperature=0.8,
         seed=1337,
-        logits_processor=logit_processors
+        logit_bias=logit_bias
     )
+
     assert output["choices"][0]["text"].lower().startswith("rot")
 
     model.set_seed(1337)

@@ -982,12 +982,17 @@ class LlamaSampler:
         )
         self._add_sampler(sampler)
 
-    def init_logit_bias(
-        self, n_vocab: int, n_logit_bias, logit_bias: llama_cpp.llama_logit_bias_p
+    def add_logit_bias(
+        self, n_vocab: int, logit_bias: Dict[int, float]
     ):
-        sampler = llama_cpp.llama_sampler_init_logit_bias(
-            n_vocab, n_logit_bias, logit_bias
-        )
+        # Construct a C array to store the contents of the logit_bias dictionary
+        logit_bias_array = (llama_cpp.llama_logit_bias * len(logit_bias))()
+
+        for i, (token, bias) in enumerate(logit_bias.items()):
+            logit_bias_array[i].token = token
+            logit_bias_array[i].bias = bias
+
+        sampler = llama_cpp.llama_sampler_init_logit_bias(n_vocab, len(logit_bias), logit_bias_array)
         self._add_sampler(sampler)
 
     def add_custom(

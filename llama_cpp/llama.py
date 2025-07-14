@@ -693,32 +693,14 @@ class Llama:
         dry_penalty_last_n:int = 0,
         dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         penalize_nl: bool = True,
+        logit_bias: Optional[Dict[int, float]] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
     ):
         sampler = internals.LlamaSampler()
 
-        if logits_processor is not None:
-            # Create and add a custom sampler
-            def apply_func(token_data_array: llama_cpp.llama_token_data_array_p):
-                size = token_data_array.contents.size
-                data_soa = token_data_array.contents.data
-                data_soa_address = ctypes.addressof(data_soa.contents)
-                # NOTE: This is probably broken
-                recarray = np.recarray(
-                    shape=(size,),
-                    dtype=np.dtype(
-                        [("id", np.intc), ("logit", np.single), ("p", np.single)],
-                        align=True,
-                    ),
-                    buf=(llama_cpp.llama_token_data * size).from_address(
-                        data_soa_address
-                    ),
-                )
-                for logit_processor in logits_processor:
-                    recarray.logit[:] = logit_processor(self._input_ids, recarray.logit)
-
-            sampler.add_custom(apply_func)
+        if logit_bias is not None:
+            sampler.add_logit_bias(self.n_vocab(), logit_bias)
 
         sampler.add_penalties(
             n_vocab=self._n_vocab,
@@ -792,6 +774,7 @@ class Llama:
         dry_penalty_last_n:int = 0,
         dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         penalize_nl: bool = True,
+        logit_bias: Optional[Dict[int, float]] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
         idx: Optional[int] = None,
@@ -834,6 +817,7 @@ class Llama:
                 dry_penalty_last_n=dry_penalty_last_n,
                 dry_seq_breakers=dry_seq_breakers,
                 penalize_nl=penalize_nl,
+                logit_bias=logit_bias,
                 logits_processor=logits_processor,
                 grammar=grammar,
             )
@@ -870,6 +854,7 @@ class Llama:
         dry_penalty_last_n:int = 0,
         dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         penalize_nl: bool = True,
+        logit_bias: Optional[Dict[int, float]] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
         grammar: Optional[LlamaGrammar] = None,
@@ -916,6 +901,7 @@ class Llama:
             dry_penalty_last_n=dry_penalty_last_n,
             dry_seq_breakers=dry_seq_breakers,
             penalize_nl=penalize_nl,
+            logit_bias=logit_bias,
             logits_processor=logits_processor,
             grammar=grammar,
         )
@@ -974,6 +960,7 @@ class Llama:
                     dry_allowed_length=dry_allowed_length,
                     dry_penalty_last_n=dry_penalty_last_n,
                     dry_seq_breakers=dry_seq_breakers,
+                    logit_bias=logit_bias,
                     logits_processor=logits_processor,
                     grammar=grammar,
                     penalize_nl=penalize_nl,
@@ -1199,9 +1186,9 @@ class Llama:
         dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
+        logit_bias: Optional[Dict[int, float]] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
-        logit_bias: Optional[Dict[int, float]] = None,
     ) -> Union[
         Iterator[CreateCompletionResponse], Iterator[CreateCompletionStreamResponse]
     ]:
@@ -1396,6 +1383,7 @@ class Llama:
             presence_penalty=presence_penalty,
             repeat_penalty=repeat_penalty,
             stopping_criteria=stopping_criteria,
+            logit_bias=logit_bias,
             logits_processor=logits_processor,
             grammar=grammar,
         ):
@@ -1833,9 +1821,9 @@ class Llama:
         dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
+        logit_bias: Optional[Dict[int, float]] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
-        logit_bias: Optional[Dict[int, float]] = None,
     ) -> Union[CreateCompletionResponse, Iterator[CreateCompletionStreamResponse]]:
         """Generate text from a prompt.
 
@@ -1869,9 +1857,9 @@ class Llama:
             dry_seq_breakers: Specify an array of sequence breakers for DRY sampling. Only a JSON array of strings is accepted. Default: `['\n', ':', '"', '*']`
             model: The name to use for the model in the completion object.
             stopping_criteria: A list of stopping criteria to use.
+            logit_bias: A logit bias to use.
             logits_processor: A list of logits processors to use.
             grammar: A grammar to use for constrained sampling.
-            logit_bias: A logit bias to use.
 
         Raises:
             ValueError: If the requested tokens exceed the context window.
@@ -1910,9 +1898,9 @@ class Llama:
             dry_seq_breakers=dry_seq_breakers,
             model=model,
             stopping_criteria=stopping_criteria,
+            logit_bias=logit_bias,
             logits_processor=logits_processor,
             grammar=grammar,
-            logit_bias=logit_bias,
         )
         if stream:
             chunks: Iterator[CreateCompletionStreamResponse] = completion_or_chunks
@@ -1951,9 +1939,9 @@ class Llama:
         dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
         stopping_criteria: Optional[StoppingCriteriaList] = None,
+        logit_bias: Optional[Dict[int, float]] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
-        logit_bias: Optional[Dict[int, float]] = None,
     ) -> Union[CreateCompletionResponse, Iterator[CreateCompletionStreamResponse]]:
         """Generate text from a prompt.
 
@@ -1987,9 +1975,9 @@ class Llama:
             dry_seq_breakers: Specify an array of sequence breakers for DRY sampling. Only a JSON array of strings is accepted. Default: `['\n', ':', '"', '*']`
             model: The name to use for the model in the completion object.
             stopping_criteria: A list of stopping criteria to use.
+            logit_bias: A logit bias to use.
             logits_processor: A list of logits processors to use.
             grammar: A grammar to use for constrained sampling.
-            logit_bias: A logit bias to use.
 
         Raises:
             ValueError: If the requested tokens exceed the context window.
@@ -2028,9 +2016,9 @@ class Llama:
             dry_seq_breakers=dry_seq_breakers,
             model=model,
             stopping_criteria=stopping_criteria,
+            logit_bias=logit_bias,
             logits_processor=logits_processor,
             grammar=grammar,
-            logit_bias=logit_bias,
         )
 
     def create_chat_completion(
@@ -2065,9 +2053,9 @@ class Llama:
         dry_penalty_last_n:int = 0,
         dry_seq_breakers: list[str] = ["\n", ":", "\"", "*"],
         model: Optional[str] = None,
+        logit_bias: Optional[Dict[int, float]] = None,
         logits_processor: Optional[LogitsProcessorList] = None,
         grammar: Optional[LlamaGrammar] = None,
-        logit_bias: Optional[Dict[int, float]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
     ) -> Union[
@@ -2106,9 +2094,9 @@ class Llama:
             dry_penalty_last_n: How many tokens to scan for repetitions. Default: `0`, where `0` is disabled and `-1` is context size.
             dry_seq_breakers: Specify an array of sequence breakers for DRY sampling. Only a JSON array of strings is accepted. Default: `['\n', ':', '"', '*']`
             model: The name to use for the model in the completion object.
+            logit_bias: A logit bias to use.
             logits_processor: A list of logits processors to use.
             grammar: A grammar to use.
-            logit_bias: A logit bias to use.
 
         Returns:
             Generated chat completion or a stream of chat completion chunks.
@@ -2152,9 +2140,9 @@ class Llama:
             dry_penalty_last_n=dry_penalty_last_n,
             dry_seq_breakers=dry_seq_breakers,
             model=model,
+            logit_bias=logit_bias,
             logits_processor=logits_processor,
             grammar=grammar,
-            logit_bias=logit_bias,
         )
 
     def create_chat_completion_openai_v1(

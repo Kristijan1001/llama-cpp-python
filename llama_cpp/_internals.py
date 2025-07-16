@@ -312,7 +312,10 @@ class LlamaContext:
         llama_cpp.llama_memory_clear(self.get_memory(), data)
 
     def memory_seq_rm(self, seq_id: int, p0: int, p1: int) -> bool:
-        return llama_cpp.llama_memory_seq_rm(self.get_memory(), seq_id, p0, p1)
+        if self.ctx is not None and seq_id >= 0:
+            return llama_cpp.llama_memory_seq_rm(self.get_memory(), seq_id, p0, p1)
+        else:
+            return False
 
     def memory_seq_cp(self, seq_id_src: int, seq_id_dst: int, p0: int, p1: int):
         llama_cpp.llama_memory_seq_cp(self.get_memory(), seq_id_src, seq_id_dst, p0, p1)

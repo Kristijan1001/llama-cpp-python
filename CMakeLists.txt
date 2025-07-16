@@ -122,6 +122,7 @@ if (LLAMA_BUILD)
     llama_cpp_python_install_target(ggml-rpc)
     llama_cpp_python_install_target(ggml-sycl)
     llama_cpp_python_install_target(ggml-vulkan)
+    llama_cpp_python_install_target(ggml-webgpu)
 
     # Workaround for Windows + CUDA https://github.com/abetlen/llama-cpp-python/issues/563
     if (WIN32)

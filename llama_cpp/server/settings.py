@@ -113,6 +113,9 @@ class ModelSettings(BaseSettings):
     swa_full: bool = Field(
         default=True, description="Whether to use full-size SWA cache"
     )
+    kv_unified: bool = Field(
+        default=True, description="use single unified KV buffer for the KV cache of all sequences"
+    )
     # Sampling Params
     last_n_tokens_size: int = Field(
         default=64,

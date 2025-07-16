@@ -197,12 +197,13 @@ llama_seq_id = ctypes.c_int32
 
 
 # enum llama_vocab_type {
-#     LLAMA_VOCAB_TYPE_NONE = 0, // For models without vocab
-#     LLAMA_VOCAB_TYPE_SPM  = 1, // LLaMA tokenizer based on byte-level BPE with byte fallback
-#     LLAMA_VOCAB_TYPE_BPE  = 2, // GPT-2 tokenizer based on byte-level BPE
-#     LLAMA_VOCAB_TYPE_WPM  = 3, // BERT tokenizer based on WordPiece
-#     LLAMA_VOCAB_TYPE_UGM  = 4, // T5 tokenizer based on Unigram
-#     LLAMA_VOCAB_TYPE_RWKV = 5, // RWKV tokenizer based on greedy tokenization
+#     LLAMA_VOCAB_TYPE_NONE   = 0, // For models without vocab
+#     LLAMA_VOCAB_TYPE_SPM    = 1, // LLaMA tokenizer based on byte-level BPE with byte fallback
+#     LLAMA_VOCAB_TYPE_BPE    = 2, // GPT-2 tokenizer based on byte-level BPE
+#     LLAMA_VOCAB_TYPE_WPM    = 3, // BERT tokenizer based on WordPiece
+#     LLAMA_VOCAB_TYPE_UGM    = 4, // T5 tokenizer based on Unigram
+#     LLAMA_VOCAB_TYPE_RWKV   = 5, // RWKV tokenizer based on greedy tokenization
+#     LLAMA_VOCAB_TYPE_PLAMO2 = 6, // PLaMo-2 tokenizer based on Aho-Corasick with dynamic programming
 # };
 LLAMA_VOCAB_TYPE_NONE = 0
 """For models without vocab"""
@@ -216,8 +217,11 @@ LLAMA_VOCAB_TYPE_UGM = 4
 """T5 tokenizer based on Unigram"""
 LLAMA_VOCAB_TYPE_RWKV = 5
 """RWKV tokenizer based on greedy tokenization"""
+LLAMA_VOCAB_TYPE_PLAMO2 = 6
+"""PLaMo-2 tokenizer based on Aho-Corasick with dynamic programming"""
 
 
+# NOTE: Deprecated and will be removed in the future. (already gone in llama.cpp)
 # // pre-tokenization types
 # enum llama_vocab_pre_type {
 #     LLAMA_VOCAB_PRE_TYPE_DEFAULT        = 0,
@@ -257,6 +261,7 @@ LLAMA_VOCAB_TYPE_RWKV = 5
 #     LLAMA_VOCAB_PRE_TYPE_PIXTRAL        = 34,
 #     LLAMA_VOCAB_PRE_TYPE_SEED_CODER     = 35,
 #     LLAMA_VOCAB_PRE_TYPE_HUNYUAN        = 36,
+#     LLAMA_VOCAB_PRE_TYPE_KIMI_K2        = 37,
 # };
 LLAMA_VOCAB_PRE_TYPE_DEFAULT = 0
 LLAMA_VOCAB_PRE_TYPE_LLAMA3 = 1
@@ -295,6 +300,7 @@ LLAMA_VOCAB_PRE_TYPE_LLAMA4 = 33
 LLAMA_VOCAB_PRE_TYPE_PIXTRAL = 34
 LLAMA_VOCAB_PRE_TYPE_SEED_CODER = 35
 LLAMA_VOCAB_PRE_TYPE_HUNYUAN  = 36
+LLAMA_VOCAB_PRE_TYPE_KIMI_K2  = 37
 
 
 # // note: these values should be synchronized with ggml_rope
@@ -814,6 +820,9 @@ class llama_model_params(ctypes.Structure):
 #     bool swa_full;    // use full-size SWA cache (https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
 #                       // NOTE: setting to false when n_seq_max > 1 can cause bad performance in some casesAdd commentMore actions
 #                       //       ref: https://github.com/ggml-org/llama.cpp/pull/13845#issuecomment-2924800573
+#     bool kv_unified;  // use a unified buffer across the input sequences when computing the attention
+#                       // try to disable when n_seq_max > 1 for improved performance when the sequences do not share a large prefix
+#                       // ref: https://github.com/ggml-org/llama.cpp/pull/14363
 # };
 class llama_context_params(ctypes.Structure):
     """Parameters for llama_context
@@ -848,6 +857,7 @@ class llama_context_params(ctypes.Structure):
         no_perf (bool): whether to measure performance timings
         op_offload(bool): whether to offload host tensor operations to device
         swa_full(bool): whether to use full-size SWA cache
+        kv_unified(bool): use a unified buffer across the input sequences when computing the attention
     """
 
     if TYPE_CHECKING:
@@ -880,6 +890,7 @@ class llama_context_params(ctypes.Structure):
         no_perf: bool
         op_offload:bool
         swa_full:bool
+        kv_unified:bool
 
     _fields_ = [
         ("n_ctx", ctypes.c_uint32),
@@ -911,6 +922,7 @@ class llama_context_params(ctypes.Structure):
         ("no_perf", ctypes.c_bool),
         ("op_offload", ctypes.c_bool),
         ("swa_full", ctypes.c_bool),
+        ("kv_unified", ctypes.c_bool),
     ]
 
 
@@ -2795,6 +2807,14 @@ def llama_vocab_nl(vocab: llama_vocab_p, /) -> llama_token:
 def llama_vocab_pad(vocab: llama_vocab_p, /) -> llama_token:
     """padding"""
     ...
+
+
+# LLAMA_API llama_token llama_vocab_mask(const struct llama_vocab * vocab); // mask
+@ctypes_function("llama_vocab_mask", [llama_vocab_p_ctypes], llama_token)
+def llama_vocab_mask(vocab: llama_vocab_p, /) -> llama_token:
+    """mask"""
+    ...
+
 
 # LLAMA_API bool llama_vocab_get_add_bos(const struct llama_vocab * vocab);
 @ctypes_function(

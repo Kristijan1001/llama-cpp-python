@@ -95,6 +95,7 @@ class Llama:
         flash_attn: bool = False,
         op_offload: Optional[bool] = None,
         swa_full: Optional[bool] = None,
+        kv_unified: Optional[bool] = None,
         # Sampling Params
         no_perf: bool = False,
         last_n_tokens_size: int = 64,
@@ -178,6 +179,7 @@ class Llama:
             flash_attn: Use flash attention.
             op_offload: whether to offload host tensor operations to device
             swa_full: whether to use full-size SWA cache
+            kv_unified: use single unified KV buffer for the KV cache of all sequences
             no_perf: Measure performance timings.
             last_n_tokens_size: Maximum number of tokens to keep in the last_n_tokens deque.
             lora_base: Optional path to base model, useful if using a quantized base model and you want to apply LoRA to an f16 model.
@@ -351,6 +353,9 @@ class Llama:
 
         if swa_full is not None:
             self.context_params.swa_full = swa_full
+
+        if kv_unified is not None:
+            self.context_params.kv_unified = kv_unified
 
         #  KV cache quantization
         if type_k is not None:
@@ -2213,6 +2218,7 @@ class Llama:
             flash_attn=self.context_params.flash_attn,
             op_offload=self.context_params.op_offload,
             swa_full=self.context_params.swa_full,
+            kv_unified= self.context_params.kv_unified,
             # Sampling Params
             no_perf=self.context_params.no_perf,
             last_n_tokens_size=self.last_n_tokens_size,
@@ -2326,6 +2332,10 @@ class Llama:
     def token_pad(self) -> int:
         """Return the padding token."""
         return self._model.token_pad()
+
+    def token_mask(self) -> int:
+        """Return the mask token."""
+        return self._model.token_mask()
 
     def pooling_type(self) -> str:
         """Return the pooling type."""

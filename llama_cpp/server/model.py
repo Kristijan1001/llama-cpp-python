@@ -282,6 +282,7 @@ class LlamaProxy:
             flash_attn=settings.flash_attn,
             op_offload=settings.op_offload,
             swa_full=settings.swa_full,
+            kv_unified=settings.kv_unified,
             # Sampling Params
             last_n_tokens_size=settings.last_n_tokens_size,
             # LoRA Params

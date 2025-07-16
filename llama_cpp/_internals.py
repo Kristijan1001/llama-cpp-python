@@ -146,6 +146,9 @@ class LlamaModel:
     def token_pad(self) -> int:
         return llama_cpp.llama_vocab_pad(self.vocab)
 
+    def token_mask(self) -> int:
+        return llama_cpp.llama_vocab_mask(self.vocab)
+
     def token_cls(self) -> int:
         return llama_cpp.llama_vocab_cls(self.vocab)
 

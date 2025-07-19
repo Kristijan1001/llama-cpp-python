@@ -4041,6 +4041,7 @@ def llama_log_set(
 #
 #     int32_t n_p_eval;
 #     int32_t n_eval;
+#     int32_t n_reused; // number of times a ggml compute graph had been reused
 # };
 class llama_perf_context_data(ctypes.Structure):
     _fields_ = [
@@ -4050,6 +4051,7 @@ class llama_perf_context_data(ctypes.Structure):
         ("t_eval_ms", ctypes.c_double),
         ("n_p_eval", ctypes.c_int32),
         ("n_eval", ctypes.c_int32),
+        ("n_reused", ctypes.c_int32),
     ]
 
 

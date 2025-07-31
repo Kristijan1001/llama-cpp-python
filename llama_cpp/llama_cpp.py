@@ -1668,6 +1668,14 @@ def llama_model_is_recurrent(model: llama_model_p, /) -> bool:
     ...
 
 
+# // Returns true if the model is diffusion-based (like LLaDA, Dream, etc.)
+# LLAMA_API bool llama_model_is_diffusion(const struct llama_model * model);
+@ctypes_function("llama_model_is_diffusion", [llama_model_p_ctypes], ctypes.c_bool)
+def llama_model_is_diffusion(model: llama_model_p, /) -> bool:
+    """Returns true if the model is diffusion-based (like LLaDA, Dream, etc.)"""
+    ...
+
+
 # // Returns 0 on success
 # LLAMA_API uint32_t llama_model_quantize(
 #         const char * fname_inp,
@@ -2619,6 +2627,7 @@ def llama_synchronize(ctx: llama_context_p, /):
 # // in the order they have appeared in the batch.
 # // Rows: number of tokens for which llama_batch.logits[i] != 0
 # // Cols: n_vocab
+# // TODO: deprecate in favor of llama_get_logits_ith() (ref: https://github.com/ggml-org/llama.cpp/pull/14853#issuecomment-3113143522)
 # LLAMA_API float * llama_get_logits(struct llama_context * ctx);
 @ctypes_function(
     "llama_get_logits", [llama_context_p_ctypes], ctypes.POINTER(ctypes.c_float)
@@ -2659,6 +2668,7 @@ def llama_get_logits_ith(
 # // in the order they have appeared in the batch.
 # // shape: [n_outputs*n_embd]
 # // Otherwise, returns NULL.
+# // TODO: deprecate in favor of llama_get_embeddings_ith() (ref: https://github.com/ggml-org/llama.cpp/pull/14853#issuecomment-3113143522)
 # LLAMA_API float * llama_get_embeddings(struct llama_context * ctx);
 @ctypes_function(
     "llama_get_embeddings", [llama_context_p_ctypes], ctypes.POINTER(ctypes.c_float)

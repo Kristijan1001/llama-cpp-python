@@ -61,7 +61,7 @@ jobs:
           echo $LD_LIBRARY_PATH
 
           # Add project-specific and feature flags
-          CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES='70-real;75-real;80-real;86-real;89-real;90-real;100-real;120-real'"
+          CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES='75-real;80-real;86-real;89-real;90-real;100-real;120-real'"
           CMAKE_ARGS="-DGGML_CUDA_FORCE_MMQ=ON ${CMAKE_ARGS}"
           CMAKE_ARGS="${CMAKE_ARGS} -DLLAMA_CURL=ON"
 

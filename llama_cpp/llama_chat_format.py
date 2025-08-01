@@ -2965,7 +2965,7 @@ class Llava15ChatHandler:
 
                 # Reset llama context
                 llama.reset()
-                llama._ctx.kv_cache_clear()
+                llama._ctx.memory_clear(True)
 
                 # Process each chunk
                 n_past = llama_cpp.llama_pos(0)
@@ -2978,7 +2978,7 @@ class Llava15ChatHandler:
 
                     chunk_type = self._mtmd_cpp.mtmd_input_chunk_get_type(chunk)
 
-                    if chunk_type == self._mtmd_cpp.MTMD_INPUT_CHUNK_TYPE_TEXT:
+                    if chunk_type == self._mtmd_cpp.mtmd_input_chunk_type.MTMD_INPUT_CHUNK_TYPE_TEXT:
                         # Handle text chunk
                         n_tokens_out = ctypes.c_size_t()
                         tokens_ptr = self._mtmd_cpp.mtmd_input_chunk_get_tokens_text(
@@ -2995,7 +2995,7 @@ class Llava15ChatHandler:
                                 )
                             llama.eval(tokens)
 
-                    elif chunk_type in [self._mtmd_cpp.MTMD_INPUT_CHUNK_TYPE_IMAGE, self._mtmd_cpp.MTMD_INPUT_CHUNK_TYPE_AUDIO]:
+                    elif chunk_type in [self._mtmd_cpp.mtmd_input_chunk_type.MTMD_INPUT_CHUNK_TYPE_IMAGE, self._mtmd_cpp.mtmd_input_chunk_type.MTMD_INPUT_CHUNK_TYPE_AUDIO]:
                         # Handle image/audio chunk using helper
                         chunk_n_tokens = self._mtmd_cpp.mtmd_input_chunk_get_n_tokens(chunk)
 
@@ -3595,7 +3595,7 @@ class Qwen25VLChatHandler(Llava15ChatHandler):
 
         # Clear state for multiple runs
         llama.reset()
-        llama._ctx.kv_cache_clear()
+        llama._ctx.memory_clear(True)
         llama.n_tokens = 0
 
         if hasattr(llama, 'input_ids'):

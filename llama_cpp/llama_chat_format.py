@@ -246,7 +246,7 @@ class Jinja2ChatFormatter(ChatFormatter):
         def raise_exception(message: str):
             raise ValueError(message)
 
-        def strftime_now(format_string="%Y-%m-%d %H:%M:%S"):
+        def strftime_now(format_string="%Y-%m-%d %H:%M:%S") -> str:
             """
             Returns the current time formatted as a string.
             """

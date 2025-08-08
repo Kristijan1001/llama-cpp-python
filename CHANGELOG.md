@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.15]
+
+- feat: Update llama.cpp to [ggml-org/llama.cpp@cd6983d56d2cce94ecb86bb114ae8379a609073c](https://github.com/ggml-org/llama.cpp/commit/cd6983d56d2cce94ecb86bb114ae8379a609073c)
+- feat: [Add strftime_now function into Jinja2ChatFormatter Class for gpt-oss and gemma3 chat_template need](https://github.com/JamePeng/llama-cpp-python/commit/c7e20d33a660eef95bf7656b04e8cd52ba62339d)
+
 ## [0.3.14]
 
 - feat: Update llama.cpp to [ggml-org/llama.cpp@79e0b68c178656bb0632cb8602d2940b755077f8](https://github.com/ggml-org/llama.cpp/commit/f0d4d176df72734a543c29eef9f942850c13311e)

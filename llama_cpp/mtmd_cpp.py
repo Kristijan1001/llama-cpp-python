@@ -7,10 +7,12 @@ from ctypes import (
     c_char_p,
     c_int,
     c_uint,
+    c_uint8,
     c_int32,
     c_uint32,
     c_float,
     c_void_p,
+    c_size_t,
     POINTER,
     _Pointer,  # type: ignore
     Structure,
@@ -141,9 +143,9 @@ def mtmd_default_marker() -> c_char_p:
 @ctypes_function_mtmd(
     "mtmd_context_params_default",
     [],
-    mtmd_context_params_p_ctypes,
+    mtmd_context_params,
 )
-def mtmd_context_params_default() -> mtmd_context_params_p:
+def mtmd_context_params_default() -> mtmd_context_params:
     ...
 
 
@@ -156,14 +158,14 @@ def mtmd_context_params_default() -> mtmd_context_params_p:
     "mtmd_init_from_file", [
         c_char_p,
         llama_cpp.llama_model_p_ctypes,
-        mtmd_context_params_p_ctypes,
+        mtmd_context_params,
     ],
     mtmd_context_p_ctypes,
 )
 def mtmd_init_from_file(
     mmproj_fname: c_char_p,
     text_model: llama_cpp.llama_model_p,
-    ctx_params: mtmd_context_params_p,
+    ctx_params: mtmd_context_params,
     /,
 ) -> mtmd_context_p:
     """
@@ -366,17 +368,15 @@ def mtmd_input_chunk_get_type(chunk: mtmd_input_chunk_p) -> c_int32:
     """
     ...
 
-# MTMD_API const llama_token *        mtmd_input_chunk_get_tokens_text (const mtmd_input_chunk * chunk, size_t * n_tokens_output);
+# MTMD_API const llama_token * mtmd_input_chunk_get_tokens_text(const mtmd_input_chunk * chunk, size_t * n_tokens_output);
 @ctypes_function_mtmd(
-    "mtmd_input_chunk_get_tokens_text", [
-        mtmd_input_chunk_p_ctypes,
-        POINTER(c_uint),
-    ], c_int32)
+    "mtmd_input_chunk_get_tokens_text",
+    [mtmd_input_chunk_p_ctypes, POINTER(c_size_t)],
+    POINTER(llama_cpp.llama_token)
+)
 def mtmd_input_chunk_get_tokens_text(
-    chunk: mtmd_input_chunk_p,
-    n_tokens_output: c_uint,
-    /,
-) -> c_int32:
+    chunk: mtmd_input_chunk_p, n_tokens_output: "_Pointer[c_size_t]", /
+) -> Optional["_Pointer[llama_cpp.llama_token]"]:
     ...
 
 # MTMD_API const mtmd_image_tokens *  mtmd_input_chunk_get_tokens_image(const mtmd_input_chunk * chunk);
@@ -609,11 +609,11 @@ def mtmd_helper_bitmap_init_from_file(ctx: mtmd_context_p, fname: c_char_p) -> m
 # // this function is thread-safe
 # MTMD_API mtmd_bitmap * mtmd_helper_bitmap_init_from_buf(mtmd_context * ctx, const unsigned char * buf, size_t len);
 @ctypes_function_mtmd(
-    "mtmd_helper_bitmap_init_from_buf", [mtmd_context_p_ctypes, c_char_p, c_uint], mtmd_bitmap_p_ctypes)
+    "mtmd_helper_bitmap_init_from_buf", [mtmd_context_p_ctypes, POINTER(c_uint8), c_size_t], mtmd_bitmap_p_ctypes)
 def mtmd_helper_bitmap_init_from_buf(
     ctx: mtmd_context_p,
-    buf: c_char_p,
-    len: c_uint,
+    buf: CtypesArray[c_uint8],
+    len: c_size_t,
     /,
 ) -> mtmd_bitmap_p:
     """

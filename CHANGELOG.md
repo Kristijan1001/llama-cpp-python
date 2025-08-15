@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.16]
+
+- feat: Update llama.cpp to [ggml-org/llama.cpp/commit/5e6229a8409ac786e62cb133d09f1679a9aec13e](https://github.com/ggml-org/llama.cpp/commit/5e6229a8409ac786e62cb133d09f1679a9aec13e)
+- fix: [Improve the Qwen25VLChatHandler's ability to handle multiple image inputs to avoid the illusion of multiple image inputs](https://github.com/JamePeng/llama-cpp-python/commit/a9a2d1edc53321dc4ecb158579b169580634115b)
+
 ## [0.3.15]
 
 - feat: Update llama.cpp to [ggml-org/llama.cpp@cd6983d56d2cce94ecb86bb114ae8379a609073c](https://github.com/ggml-org/llama.cpp/commit/cd6983d56d2cce94ecb86bb114ae8379a609073c)

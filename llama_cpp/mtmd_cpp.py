@@ -275,8 +275,8 @@ def mtmd_bitmap_get_data(bitmap: mtmd_bitmap_p) -> c_char_p:
     ...
 
 # MTMD_API size_t                mtmd_bitmap_get_n_bytes(const mtmd_bitmap * bitmap);
-@ctypes_function_mtmd("mtmd_bitmap_get_n_bytes", [mtmd_bitmap_p_ctypes], c_uint)
-def mtmd_bitmap_get_n_bytes(bitmap: mtmd_bitmap_p) -> c_uint:
+@ctypes_function_mtmd("mtmd_bitmap_get_n_bytes", [mtmd_bitmap_p_ctypes], c_size_t)
+def mtmd_bitmap_get_n_bytes(bitmap: mtmd_bitmap_p) -> c_size_t:
     ...
 
 # MTMD_API bool                  mtmd_bitmap_is_audio   (const mtmd_bitmap * bitmap);
@@ -330,8 +330,8 @@ def mtmd_input_chunks_init() -> mtmd_input_chunks_p:
 
 
 # MTMD_API size_t                   mtmd_input_chunks_size(const mtmd_input_chunks * chunks);
-@ctypes_function_mtmd("mtmd_input_chunks_size", [mtmd_input_chunks_p_ctypes], c_uint)
-def mtmd_input_chunks_size(chunks: mtmd_input_chunks_p) -> c_uint:
+@ctypes_function_mtmd("mtmd_input_chunks_size", [mtmd_input_chunks_p_ctypes], c_size_t)
+def mtmd_input_chunks_size(chunks: mtmd_input_chunks_p) -> c_size_t:
     ...
 
 
@@ -385,8 +385,8 @@ def mtmd_input_chunk_get_tokens_image(chunk: mtmd_input_chunk_p) -> mtmd_image_t
     ...
 
 # MTMD_API size_t                     mtmd_input_chunk_get_n_tokens    (const mtmd_input_chunk * chunk);
-@ctypes_function_mtmd("mtmd_input_chunk_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_uint)
-def mtmd_input_chunk_get_n_tokens(chunk: mtmd_input_chunk_p) -> c_uint:
+@ctypes_function_mtmd("mtmd_input_chunk_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_size_t)
+def mtmd_input_chunk_get_n_tokens(chunk: mtmd_input_chunk_p) -> c_size_t:
     ...
 
 # // returns nullptr for ID on text chunk
@@ -435,20 +435,20 @@ def mtmd_input_chunk_free(chunk: mtmd_input_chunk_p):
 # // it will be freed along with mtmd_input_chunk
 # MTMD_API size_t       mtmd_image_tokens_get_n_tokens(const mtmd_image_tokens * image_tokens); // TODO: deprecate
 @ctypes_function_mtmd(
-    "mtmd_image_tokens_get_n_tokens", [mtmd_image_tokens_p_ctypes], c_uint)
-def mtmd_image_tokens_get_n_tokens(image_tokens: mtmd_image_tokens_p) -> c_uint:
+    "mtmd_image_tokens_get_n_tokens", [mtmd_image_tokens_p_ctypes], c_size_t)
+def mtmd_image_tokens_get_n_tokens(image_tokens: mtmd_image_tokens_p) -> c_size_t:
     ...
 
 # MTMD_API size_t       mtmd_image_tokens_get_nx      (const mtmd_image_tokens * image_tokens);
 @ctypes_function_mtmd(
-    "mtmd_image_tokens_get_nx", [mtmd_image_tokens_p_ctypes], c_uint)
-def mtmd_image_tokens_get_nx(image_tokens: mtmd_image_tokens_p) -> c_uint:
+    "mtmd_image_tokens_get_nx", [mtmd_image_tokens_p_ctypes], c_size_t)
+def mtmd_image_tokens_get_nx(image_tokens: mtmd_image_tokens_p) -> c_size_t:
     ...
 
 # MTMD_API size_t       mtmd_image_tokens_get_ny      (const mtmd_image_tokens * image_tokens);
 @ctypes_function_mtmd(
-    "mtmd_image_tokens_get_ny", [mtmd_image_tokens_p_ctypes], c_uint)
-def mtmd_image_tokens_get_ny(image_tokens: mtmd_image_tokens_p) -> c_uint:
+    "mtmd_image_tokens_get_ny", [mtmd_image_tokens_p_ctypes], c_size_t)
+def mtmd_image_tokens_get_ny(image_tokens: mtmd_image_tokens_p) -> c_size_t:
     ...
 
 # MTMD_API const char * mtmd_image_tokens_get_id      (const mtmd_image_tokens * image_tokens); // TODO: deprecate
@@ -630,8 +630,8 @@ def mtmd_helper_bitmap_init_from_buf(
 # // helper to count the total number of tokens from a list of chunks, useful to keep track of KV cache
 # MTMD_API size_t mtmd_helper_get_n_tokens(const mtmd_input_chunks * chunks);
 @ctypes_function_mtmd(
-    "mtmd_helper_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_uint)
-def mtmd_helper_get_n_tokens(chunks: mtmd_input_chunk_p) -> c_uint:
+    "mtmd_helper_get_n_tokens", [mtmd_input_chunk_p_ctypes], c_size_t)
+def mtmd_helper_get_n_tokens(chunks: mtmd_input_chunk_p) -> c_size_t:
     """
     helper to count the total number of tokens from a list of chunks, useful to keep track of KV cache
     """

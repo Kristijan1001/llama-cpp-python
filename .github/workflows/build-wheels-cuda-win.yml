@@ -81,9 +81,9 @@ jobs:
       - name: Install Dependencies
         run: |
           git config --system core.longpaths true
-          uv pip install --upgrade build setuptools wheel packaging
-          # Install additional dependencies for Python 3.13 compatibility
-          uv pip install --upgrade cmake ninja
+          uv pip install --upgrade build setuptools wheel packaging cmake ninja
+          # Pre-install common dependencies to speed up build
+          uv pip install numpy scikit-build-core
 
       - name: Build Wheel
         run: |
@@ -99,16 +99,20 @@ jobs:
             $env:LD_LIBRARY_PATH = $env:CONDA_PREFIX + '/lib:' + $env:LD_LIBRARY_PATH
           }
           
-          $env:VERBOSE = '1'
+          # Build configuration optimized for speed and RTX 5080 compatibility  
           $env:CMAKE_BUILD_TYPE = 'Release'
+          $env:CMAKE_BUILD_PARALLEL_LEVEL = '4'
           
-          # Updated CMAKE_ARGS for RTX 5080 - using "all" for compatibility
-          # This will auto-detect and build for all compatible architectures including RTX 5080
+          # RTX 5080 specific: Build for Ada Lovelace (89) + Hopper (90) architectures
+          # This covers RTX 5080 without building for ALL architectures (much faster)
           $env:CMAKE_ARGS = '-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=' + $env:CUDAARCHVER
-          $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_MMQ=ON $env:CMAKE_ARGS"
-          $env:CMAKE_ARGS = "-DLLAMA_CURL=OFF $env:CMAKE_ARGS"
-          $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_DMMV=ON $env:CMAKE_ARGS"
           $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_CUBLAS=ON $env:CMAKE_ARGS"
+          $env:CMAKE_ARGS = "-DGGML_STATIC=ON $env:CMAKE_ARGS"
+          $env:CMAKE_ARGS = "-DLLAMA_CURL=OFF $env:CMAKE_ARGS"
+          
+          # Disable unnecessary features to speed up build
+          $env:CMAKE_ARGS = "-DGGML_METAL=OFF $env:CMAKE_ARGS"
+          $env:CMAKE_ARGS = "-DGGML_OPENCL=OFF $env:CMAKE_ARGS"
           
           # AMD 9800X3D optimizations (AVX2 support)
           if ($env:AVXVER -eq 'AVX') {

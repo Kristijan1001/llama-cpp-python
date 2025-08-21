@@ -25,7 +25,7 @@ jobs:
               'pyver' = @("3.13")
               'cuda' = @("12.9.0")
               'releasetag' = @("AVX2")
-              'cudaarch' = @("all")
+              'cudaarch' = @("89;90")
           }
 
           $matrixOut = ConvertTo-Json $matrix -Compress
@@ -118,8 +118,10 @@ jobs:
             $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_AVX2=on -DGGML_FMA=on -DGGML_F16C=on'
           }
           
-          # Additional optimizations for modern hardware
+          # Additional optimizations for modern hardware and faster builds
           $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_NATIVE=on'
+          $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DCMAKE_BUILD_PARALLEL_LEVEL=4'
+          $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_STATIC=ON'
           
           # Build with enhanced error handling
           try {

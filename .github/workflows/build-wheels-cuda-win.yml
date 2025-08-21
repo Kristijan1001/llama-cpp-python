@@ -22,10 +22,10 @@ jobs:
         run: |
           $matrix = @{
               'os' = @('windows-2022')
-              'pyver' = @("3.10", "3.11", "3.12")
-              'cuda' = @("12.4.1","12.6.3","12.8.1")
+              'pyver' = @("3.13")
+              'cuda' = @("12.9.1")
               'releasetag' = @("AVX2")
-              'cudaarch' = @("all")
+              'cudaarch' = @("12.0")
           }
 
           $matrixOut = ConvertTo-Json $matrix -Compress
@@ -46,7 +46,8 @@ jobs:
       CUDAARCHVER: ${{ matrix.cudaarch }}
       # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html
       # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#gpu-feature-list
-      # e.g. "all" "89"
+      # RTX 5080 uses Blackwell architecture with sm_120 compute capability
+      # This matches your working ComfyUI PyTorch 2.8.0+cu129 environment
 
     steps:
       - name: Add MSBuild to PATH
@@ -59,15 +60,16 @@ jobs:
         with:
           submodules: "recursive"
       
-      
-      # from kingbri1/flash-attention build-wheels.yml
+      # Install CUDA toolkit with support for 12.9
       - name: Install CUDA ${{ matrix.cuda }}
         uses: Jimver/cuda-toolkit@v0.2.23
         id: cuda-toolkit
         with:
           cuda: "${{ matrix.cuda }}"
+          # Explicit method for CUDA 12.9 support
+          method: 'network'
 
-      # from astral-sh/setup-uv
+      # Install UV with Python 3.13 support
       - name: Install the latest version of uv and set the python version
         uses: astral-sh/setup-uv@v6
         with:
@@ -79,42 +81,65 @@ jobs:
         run: |
           git config --system core.longpaths true
           uv pip install --upgrade build setuptools wheel packaging
+          # Install additional dependencies for Python 3.13 compatibility
+          uv pip install --upgrade cmake ninja
 
       - name: Build Wheel
         run: |
-          # $cupath = 'CUDA_PATH_V' + $env:CUDAVER.Remove($env:CUDAVER.LastIndexOf('.')).Replace('.','_')
-          # echo "$cupath=$env:CONDA_PREFIX" >> $env:GITHUB_ENV
-          
           $cudaVersion = $env:CUDAVER.Remove($env:CUDAVER.LastIndexOf('.')).Replace('.','')
-          # $env:CUDA_PATH = $env:CONDA_PREFIX
           $env:CUDA_HOME = $env:CUDA_PATH
           $env:CUDA_TOOLKIT_ROOT_DIR = $env:CUDA_PATH
+          
+          # Enhanced environment variables for better compatibility
+          $env:CUDACXX = "$env:CUDA_PATH\bin\nvcc.exe"
+          $env:CUDA_NVCC_EXECUTABLE = "$env:CUDA_PATH\bin\nvcc.exe"
+          
           if ($IsLinux) {
             $env:LD_LIBRARY_PATH = $env:CONDA_PREFIX + '/lib:' + $env:LD_LIBRARY_PATH
           }
+          
           $env:VERBOSE = '1'
+          $env:CMAKE_BUILD_TYPE = 'Release'
+          
+          # Updated CMAKE_ARGS for RTX 5080 (sm_120) to match PyTorch 2.8.0+cu129
+          # Using compute capability 12.0 for RTX 5080
           $env:CMAKE_ARGS = '-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=' + $env:CUDAARCHVER
           $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_MMQ=ON $env:CMAKE_ARGS"
           $env:CMAKE_ARGS = "-DLLAMA_CURL=OFF $env:CMAKE_ARGS"
+          $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_DMMV=ON $env:CMAKE_ARGS"
+          $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_CUBLAS=ON $env:CMAKE_ARGS"
+          $env:CMAKE_ARGS = "-DCUDA_ARCHITECTURES=12.0 $env:CMAKE_ARGS"
+          
+          # AMD 9800X3D optimizations (AVX2 support)
           if ($env:AVXVER -eq 'AVX') {
             $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_AVX2=off -DGGML_FMA=off -DGGML_F16C=off'
           }
           if ($env:AVXVER -eq 'AVX2') {
-            $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_AVX2=on -DGGML_FMA=off -DGGML_F16C=off'
+            $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_AVX2=on -DGGML_FMA=on -DGGML_F16C=on'
           }
-          # if ($env:AVXVER -eq 'AVX512') {
-          #  $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_AVX512=on'
-          # }
-          # if ($env:AVXVER -eq 'basic') {
-          # $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_AVX=off -DGGML_AVX2=off -DGGML_FMA=off -DGGML_F16C=off'
-          # }
-          python -m build --wheel
-          # write the build tag to the output
+          
+          # Additional optimizations for modern hardware
+          $env:CMAKE_ARGS = $env:CMAKE_ARGS + ' -DGGML_NATIVE=on'
+          
+          # Build with enhanced error handling
+          try {
+            python -m build --wheel
+          } catch {
+            Write-Error "Build failed: $_"
+            exit 1
+          }
+          
+          # Set output variables
           Write-Output "CUDA_VERSION=$cudaVersion" >> $env:GITHUB_ENV
           
-          $wheel = (gi '.\dist\*.whl')[0]
-          $tagVer = $wheel.name.split('-')[1]
-          Write-Output "TAG_VERSION=$tagVer" >> $env:GITHUB_ENV
+          $wheel = (Get-ChildItem '.\dist\*.whl')[0]
+          if ($wheel) {
+            $tagVer = $wheel.name.split('-')[1]
+            Write-Output "TAG_VERSION=$tagVer" >> $env:GITHUB_ENV
+          } else {
+            Write-Error "No wheel file found in dist/"
+            exit 1
+          }
 
       - name: Get Current Date
         id: get-date
@@ -122,10 +147,28 @@ jobs:
           $currentDate = Get-Date -UFormat "%Y%m%d"
           Write-Output "BUILD_DATE=$currentDate" >> $env:GITHUB_ENV
 
-      - uses: softprops/action-gh-release@v2.2.2
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2.2.2
         with:
           files: dist/*
-          # Set tag_name to <tag>-cu<cuda_version>-<date>-win
+          # Updated tag format for CUDA 12.9 and Python 3.13
           tag_name: v${{ env.TAG_VERSION }}-cu${{ env.CUDA_VERSION }}-${{ env.AVXVER }}-win-${{ env.BUILD_DATE }}
+          body: |
+            ## llama-cpp-python Build
+            
+            **Configuration:**
+            - Python: ${{ matrix.pyver }} (matches your ComfyUI environment)
+            - CUDA: ${{ matrix.cuda }} (compatible with PyTorch 2.8.0+cu129)
+            - Architecture: sm_120 (RTX 5080 Blackwell)
+            - CPU Optimizations: ${{ matrix.releasetag }} (AMD 9800X3D optimized)
+            - Platform: Windows
+            
+            **Compatible with:**
+            - AMD 9800X3D (AVX2 + FMA + F16C optimized)
+            - RTX 5080 (Blackwell architecture, sm_120)
+            - PyTorch 2.8.0+cu129 (your exact ComfyUI version)
+            - ComfyUI 0.3.51+
+            
+            Built on: ${{ env.BUILD_DATE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

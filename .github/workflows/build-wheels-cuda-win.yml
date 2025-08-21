@@ -23,7 +23,7 @@ jobs:
           $matrix = @{
               'os' = @('windows-2022')
               'pyver' = @("3.13")
-              'cuda' = @("12.9.1")
+              'cuda' = @("12.9.0")
               'releasetag' = @("AVX2")
               'cudaarch' = @("12.0")
           }
@@ -60,9 +60,9 @@ jobs:
         with:
           submodules: "recursive"
       
-      # Install CUDA toolkit with support for 12.9
+      # Install CUDA toolkit with support for 12.9.0
       - name: Install CUDA ${{ matrix.cuda }}
-        uses: Jimver/cuda-toolkit@v0.2.23
+        uses: Jimver/cuda-toolkit@v0.2.24
         id: cuda-toolkit
         with:
           cuda: "${{ matrix.cuda }}"

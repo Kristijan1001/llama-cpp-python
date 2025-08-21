@@ -25,7 +25,7 @@ jobs:
               'pyver' = @("3.13")
               'cuda' = @("12.9.0")
               'releasetag' = @("AVX2")
-              'cudaarch' = @("12.0")
+              'cudaarch' = @("all")
           }
 
           $matrixOut = ConvertTo-Json $matrix -Compress
@@ -47,7 +47,7 @@ jobs:
       # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html
       # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#gpu-feature-list
       # RTX 5080 uses Blackwell architecture with sm_120 compute capability
-      # This matches your working ComfyUI PyTorch 2.8.0+cu129 environment
+      # Using "all" to let CMake auto-detect compatible architectures
 
     steps:
       - name: Add MSBuild to PATH
@@ -66,8 +66,9 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: "${{ matrix.cuda }}"
-          # Explicit method for CUDA 12.9 support
+          # Explicit method for CUDA 12.9 support with verbose logging
           method: 'network'
+          log-file-suffix: 'cu${{ matrix.cuda }}-py${{ matrix.pyver }}.txt'
 
       # Install UV with Python 3.13 support
       - name: Install the latest version of uv and set the python version
@@ -101,14 +102,13 @@ jobs:
           $env:VERBOSE = '1'
           $env:CMAKE_BUILD_TYPE = 'Release'
           
-          # Updated CMAKE_ARGS for RTX 5080 (sm_120) to match PyTorch 2.8.0+cu129
-          # Using compute capability 12.0 for RTX 5080
+          # Updated CMAKE_ARGS for RTX 5080 - using "all" for compatibility
+          # This will auto-detect and build for all compatible architectures including RTX 5080
           $env:CMAKE_ARGS = '-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=' + $env:CUDAARCHVER
           $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_MMQ=ON $env:CMAKE_ARGS"
           $env:CMAKE_ARGS = "-DLLAMA_CURL=OFF $env:CMAKE_ARGS"
           $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_DMMV=ON $env:CMAKE_ARGS"
           $env:CMAKE_ARGS = "-DGGML_CUDA_FORCE_CUBLAS=ON $env:CMAKE_ARGS"
-          $env:CMAKE_ARGS = "-DCUDA_ARCHITECTURES=12.0 $env:CMAKE_ARGS"
           
           # AMD 9800X3D optimizations (AVX2 support)
           if ($env:AVXVER -eq 'AVX') {
@@ -159,7 +159,7 @@ jobs:
             **Configuration:**
             - Python: ${{ matrix.pyver }} (matches your ComfyUI environment)
             - CUDA: ${{ matrix.cuda }} (compatible with PyTorch 2.8.0+cu129)
-            - Architecture: sm_120 (RTX 5080 Blackwell)
+            - Architecture: all (auto-detect RTX 5080 Blackwell)
             - CPU Optimizations: ${{ matrix.releasetag }} (AMD 9800X3D optimized)
             - Platform: Windows
             

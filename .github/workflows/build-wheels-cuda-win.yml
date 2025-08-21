@@ -46,8 +46,9 @@ jobs:
       CUDAARCHVER: ${{ matrix.cudaarch }}
       # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html
       # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#gpu-feature-list
-      # RTX 5080 uses Blackwell architecture with sm_120 compute capability
-      # Using "all" to let CMake auto-detect compatible architectures
+      # RTX 5080 uses Blackwell architecture with sm_120 compute capability  
+      # Building for sm_89 (Ada) + sm_90 (Hopper) covers RTX 5080 compatibility
+      # This is MUCH faster than "all" and still supports RTX 5080
 
     steps:
       - name: Add MSBuild to PATH
@@ -77,6 +78,17 @@ jobs:
           python-version: ${{ matrix.pyver }}
           activate-environment: true
           enable-cache: true
+
+      - name: Verify CUDA Installation
+        run: |
+          Write-Host "🔍 Verifying CUDA installation..."
+          if (Test-Path "$env:CUDA_PATH\bin\nvcc.exe") {
+            & "$env:CUDA_PATH\bin\nvcc.exe" --version
+            Write-Host "✅ CUDA found at: $env:CUDA_PATH"
+          } else {
+            Write-Host "❌ CUDA not found at: $env:CUDA_PATH"
+            exit 1
+          }
 
       - name: Install Dependencies
         run: |
@@ -165,7 +177,7 @@ jobs:
             **Configuration:**
             - Python: ${{ matrix.pyver }} (matches your ComfyUI environment)
             - CUDA: ${{ matrix.cuda }} (compatible with PyTorch 2.8.0+cu129)
-            - Architecture: all (auto-detect RTX 5080 Blackwell)
+            - Architecture: sm_89,sm_90 (RTX 5080 compatible, faster build)
             - CPU Optimizations: ${{ matrix.releasetag }} (AMD 9800X3D optimized)
             - Platform: Windows
             
